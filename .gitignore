@@ -1,0 +1,36 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+
+# Environments virtuels
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Fichiers de configuration contenant des informations sensibles
+*.env
+secret.py
+config.py
+
+# Fichiers et dossiers souvent générés lors du packaging / build
+/dist/
+/build/
+*.egg-info/
+.eggs/
+
+# Fichiers de cache et logs
+*.log
+.cache
+.pycache/
+
+# Fichiers spécifiques à des IDE (ajoutez ou supprimez selon votre utilisation)
+.idea/      # Pour JetBrains PyCharm
+.vscode/    # Pour Visual Studio Code
+*.swp       # Fichiers swap de Vim
+
+# Fichiers spécifiques au système d'exploitation
+.DS_Store   # Fichiers spécifiques à macOS
+Thumbs.db   # Miniatures Windows
+Desktop.ini # Windows files
