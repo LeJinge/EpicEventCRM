@@ -1,8 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.base import Base  # Assurez-vous que ce chemin correspond à votre structure de projet
-from models.user import User, UserRole  # Importez vos modèles ici
+
 from config import DATABASE_URI  # Importez votre URI de base de données
+from models.models import Base, User, UserRole  # Importez vos modèles ici
+
+
+def drop_database():
+    engine = create_engine(DATABASE_URI)
+    Base.metadata.drop_all(engine)
+    print("Toutes les tables ont été supprimées.")
 
 
 def create_database():
@@ -21,7 +27,8 @@ def create_initial_users():
 
     # Crée des utilisateurs initiaux
     admin_user = User(
-        name='Admin User',
+        first_name='Admin',
+        last_name='User',
         email='admin@example.com',
         role=UserRole.SUPERUSER
     )
@@ -29,7 +36,8 @@ def create_initial_users():
     admin_user.set_password('adminpassword')
 
     gestion_user = User(
-        name='Gestion User',
+        first_name='Gestion',
+        last_name='User',
         email='gestion@example.com',
         role=UserRole.GESTION
     )
@@ -42,6 +50,6 @@ def create_initial_users():
     print("Les utilisateurs initiaux ont été créés.")
 
 
-if __name__ == '__main__':
-    create_database()
-    create_initial_users()
+drop_database()
+create_database()
+create_initial_users()
