@@ -1,20 +1,13 @@
 import typer
 
-from controllers.user_management import handle_add_user, handle_collaborator_search_menu, \
-    handle_collaborator_management_menu
-
+from controllers.user_management import handle_collaborator_management_menu
 from views.menus import (
     display_management_main_menu,
     display_commercial_main_menu,
     display_support_main_menu,
-    display_collaborator_management_menu,
-    display_search_collaborator_menu,
     display_client_management_menu,
-    display_search_client_menu,
-    display_search_contract_menu,
     display_event_management_menu,
-    display_contract_management_menu,
-    display_search_event_menu
+    display_contract_management_menu
 )
 
 app = typer.Typer()
@@ -82,24 +75,6 @@ def handle_support_main_menu():
             handle_event_management_menu()
         elif choice == 0:
             return False
-        else:
-            typer.echo("Choix invalide.")
-
-
-def handle_client_management_menu():
-    while True:
-        typer.clear()
-        display_client_management_menu()
-        choice = typer.prompt("Entrez votre choix (1-2) ou 0 pour revenir au menu précédent: ", type=int)
-
-        if choice == 1:
-            # Ajouter un client
-            pass
-        elif choice == 2:
-            # Rechercher un client
-            pass
-        elif choice == 0:
-            break
         else:
             typer.echo("Choix invalide.")
 

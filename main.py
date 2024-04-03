@@ -1,6 +1,6 @@
 import typer
+
 from controllers.login_controller import login
-from controllers.menu_controller import main_menu
 
 app = typer.Typer()
 
