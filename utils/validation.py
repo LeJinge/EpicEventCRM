@@ -8,16 +8,23 @@ def is_valid_email(email: str) -> bool:
     return re.match(pattern, email) is not None
 
 
-# Valide les données de l'utilisateur avant la création
-def validate_user_data(first_name: str, last_name, email: str, role_str: str, password: str):
-    # Validation de l'email (exemple simple)
-    if "@" not in email or "." not in email:
+def validate_user_data(first_name: str, last_name: str, email: str, role_str: str, password: str):
+    if not first_name or not last_name:
+        raise ValueError("Le prénom et le nom ne peuvent pas être vides.")
+    if not is_valid_email(email):
         raise ValueError("Email invalide.")
-
-    # Vérifier que le rôle (sous forme de chaîne) est valide
     if role_str.upper() not in UserRole.__members__:
         raise ValueError(f"Rôle '{role_str}' invalide.")
+    return True
 
-    # Plus de validations peuvent être ajoutées ici...
 
+def validate_client_data(first_name: str, last_name: str, email: str, phone_number: str, company_name: str, **kwargs):
+    if not first_name or not last_name:
+        raise ValueError("Le prénom et le nom ne peuvent pas être vides.")
+    if not is_valid_email(email):
+        raise ValueError("Email invalide.")
+    if not re.match(r"^\+?\d[\d -]{7,14}\d$", phone_number):
+        raise ValueError("Numéro de téléphone invalide.")
+    if not company_name:
+        raise ValueError("Le nom de l'entreprise ne peut pas être vide.")
     return True

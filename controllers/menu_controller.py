@@ -1,11 +1,11 @@
 import typer
 
+from controllers.client_management import handle_client_management_menu
 from controllers.user_management import handle_collaborator_management_menu
 from views.menus import (
     display_management_main_menu,
     display_commercial_main_menu,
     display_support_main_menu,
-    display_client_management_menu,
     display_event_management_menu,
     display_contract_management_menu
 )

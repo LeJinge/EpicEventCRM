@@ -1,8 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from config import DATABASE_URI  # Importez votre URI de base de données
-from models.models import Base, User, UserRole  # Importez vos modèles ici
+from config import DATABASE_URI
+from models.models import Base, User, UserRole, pwd_context
 
 
 def drop_database():
@@ -12,44 +12,71 @@ def drop_database():
 
 
 def create_database():
-    # Crée un moteur de base de données
     engine = create_engine(DATABASE_URI)
-    # Crée toutes les tables définies dans les modèles
     Base.metadata.create_all(engine)
     print("Les tables ont été créées.")
 
 
 def create_initial_users():
-    # Crée une session
-    engine = create_engine(DATABASE_URI)
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    # Crée des utilisateurs initiaux
     admin_user = User(
-        first_name='Admin',
-        last_name='User',
-        email='admin@example.com',
-        role=UserRole.SUPERUSER
+        first_name='Jérémy',
+        last_name='Carmona',
+        email='jeremy.carmona@exemple.com',
+        role=UserRole.SUPERUSER,
+        password=pwd_context.hash('adminpassword')
     )
-    # Assurez-vous de hacher le mot de passe dans la pratique réelle
-    admin_user.set_password('adminpassword')
 
     gestion_user = User(
-        first_name='Gestion',
-        last_name='User',
-        email='gestion@example.com',
-        role=UserRole.GESTION
+        first_name='Matthias',
+        last_name='Carmona',
+        email='gestion@exemple.com',
+        role=UserRole.GESTION,
+        password=pwd_context.hash('gestionpassword')
     )
-    gestion_user.set_password('gestionpassword')  # De même, hachez le mot de passe
 
-    # Ajoute les utilisateurs à la session et les sauvegarde dans la base de données
     session.add(admin_user)
     session.add(gestion_user)
     session.commit()
     print("Les utilisateurs initiaux ont été créés.")
+    session.close()
 
 
+def create_fictitious_users():
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Commerciaux
+    for i in range(1, 16):
+        commercial_user = User(
+            first_name=f"Commercial{i}",
+            last_name=f"User{i}",
+            email=f"commercial.user{i}@example.com",
+            role=UserRole.COMMERCIALE,
+            password=pwd_context.hash('password')
+        )
+        session.add(commercial_user)
+
+    # Support
+    for i in range(1, 16):
+        support_user = User(
+            first_name=f"Support{i}",
+            last_name=f"User{i}",
+            email=f"support.user{i}@example.com",
+            role=UserRole.SUPPORT,
+            password=pwd_context.hash('password')
+        )
+        session.add(support_user)
+
+    session.commit()
+    print("Les utilisateurs fictifs commerciaux et support ont été créés.")
+    session.close()
+
+
+engine = create_engine(DATABASE_URI)
 drop_database()
 create_database()
 create_initial_users()
+create_fictitious_users()

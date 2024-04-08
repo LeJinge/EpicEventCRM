@@ -1,6 +1,10 @@
+import typer
 from rich.console import Console
 
+from models.models import Client
 
+
+# Menu principal
 def display_management_main_menu():
     console = Console()
     options = [
@@ -48,6 +52,7 @@ def display_support_main_menu():
     # Ne retourne pas la vraie entrée ici, mais affiche l'invite pour comprendre où elle sera.
 
 
+# Menu de gestion des collaborateurs
 def display_collaborator_management_menu():
     console = Console()
     options = [
@@ -60,7 +65,7 @@ def display_collaborator_management_menu():
         console.print(option)
 
 
-def display_search_collaborator_menu():
+def display_search_user_menu():
     console = Console()
     options = [
         "1. Rechercher par nom",
@@ -72,6 +77,18 @@ def display_search_collaborator_menu():
         console.print(option)
 
 
+def display_user_options(client: Client) -> int:
+    # Ici, utilisez 'client' pour afficher des options spécifiques ou pour référence
+    typer.echo(f"Options disponibles pour {client.first_name} {client.last_name}:")
+    typer.echo("1. Modifier ce collaborateur")
+    typer.echo("2. Supprimer ce collaborateur")
+    typer.echo("0. Retour")
+
+    choice = typer.prompt("Choisissez une option", type=int)
+    return choice
+
+
+# Menu de gestion des clients
 def display_client_management_menu():
     console = Console()
     options = [
@@ -89,12 +106,24 @@ def display_search_client_menu():
         "1. Rechercher par nom",
         "2. Par commerciale",
         "3. Tous les clients",
-        ]
+    ]
     console.print("[bold magenta]Rechercher un client[/bold magenta]\n")
     for option in options:
         console.print(option)
 
 
+def display_client_options(client: Client) -> int:
+    # Ici, utilisez 'client' pour afficher des options spécifiques ou pour référence
+    typer.echo(f"Options disponibles pour {client.first_name} {client.last_name}:")
+    typer.echo("1. Modifier ce client")
+    typer.echo("2. Supprimer ce client")
+    typer.echo("0. Retour")
+
+    choice = typer.prompt("Choisissez une option", type=int)
+    return choice
+
+
+# Menu de gestion des contrats
 def display_contract_management_menu():
     console = Console()
     options = [
@@ -118,6 +147,7 @@ def display_search_contract_menu():
         console.print(option)
 
 
+# Menu de gestion des événements
 def display_event_management_menu():
     console = Console()
     options = [
@@ -136,9 +166,7 @@ def display_search_event_menu():
         "2. Par support",
         "3. Par contrat",
         "4. Tous les événements",
-        ]
+    ]
     console.print("[bold magenta]Rechercher un événement[/bold magenta]\n")
     for option in options:
         console.print(option)
-
-

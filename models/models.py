@@ -44,7 +44,7 @@ class Client(Base):
     first_name = Column(String)  # Ajout du prénom
     last_name = Column(String)  # Ajout du nom
     email = Column(String)
-    phone = Column(String)
+    phone_number = Column(String)
     company_name = Column(String)
     creation_date = Column(DateTime)
 
