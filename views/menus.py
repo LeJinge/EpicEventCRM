@@ -1,7 +1,7 @@
 import typer
 from rich.console import Console
 
-from models.models import Client
+from models.models import Client, Contract
 
 
 # Menu principal
@@ -29,11 +29,8 @@ def display_commercial_main_menu():
     for option in options:
         console.print(option)
 
-    # Cet input est juste pour la structure,
-    # la vraie saisie utilisateur se fera dans le controller pour séparer les préoccupations.
     input_prompt = "Entrez votre choix (1-3): "
     console.print(input_prompt, end="", style="bold yellow")
-    # Ne retourne pas la vraie entrée ici, mais affiche l'invite pour comprendre où elle sera.
 
 
 def display_support_main_menu():
@@ -45,11 +42,8 @@ def display_support_main_menu():
     for option in options:
         console.print(option)
 
-    # Cet input est juste pour la structure,
-    # la vraie saisie utilisateur se fera dans le controller pour séparer les préoccupations.
     input_prompt = "Entrez votre choix (1): "
     console.print(input_prompt, end="", style="bold yellow")
-    # Ne retourne pas la vraie entrée ici, mais affiche l'invite pour comprendre où elle sera.
 
 
 # Menu de gestion des collaborateurs
@@ -78,7 +72,6 @@ def display_search_user_menu():
 
 
 def display_user_options(client: Client) -> int:
-    # Ici, utilisez 'client' pour afficher des options spécifiques ou pour référence
     typer.echo(f"Options disponibles pour {client.first_name} {client.last_name}:")
     typer.echo("1. Modifier ce collaborateur")
     typer.echo("2. Supprimer ce collaborateur")
@@ -113,7 +106,6 @@ def display_search_client_menu():
 
 
 def display_client_options(client: Client) -> int:
-    # Ici, utilisez 'client' pour afficher des options spécifiques ou pour référence
     typer.echo(f"Options disponibles pour {client.first_name} {client.last_name}:")
     typer.echo("1. Modifier ce client")
     typer.echo("2. Supprimer ce client")
@@ -140,11 +132,22 @@ def display_search_contract_menu():
     options = [
         "1. Rechercher par client",
         "2. Par commerciale",
-        "3. Tous les contrats",
+        "3. Par statut",
+        "4. Tous les contrats",
     ]
     console.print("[bold magenta]Rechercher un contrat[/bold magenta]\n")
     for option in options:
         console.print(option)
+
+
+def display_contract_options(contract: Contract) -> int:
+    typer.echo(f"Options disponibles pour le contrat ID {contract.id} du client {contract.client.first_name} {contract.client.last_name}:")
+    typer.echo("1. Modifier ce contrat")
+    typer.echo("2. Supprimer ce contrat")
+    typer.echo("0. Retour")
+
+    choice = typer.prompt("Choisissez une option", type=int)
+    return choice
 
 
 # Menu de gestion des événements

@@ -1,6 +1,7 @@
 import re
+from datetime import datetime
 
-from models.models import UserRole
+from models.models import UserRole, ContractStatus
 
 
 def is_valid_email(email: str) -> bool:
@@ -27,4 +28,30 @@ def validate_client_data(first_name: str, last_name: str, email: str, phone_numb
         raise ValueError("Numéro de téléphone invalide.")
     if not company_name:
         raise ValueError("Le nom de l'entreprise ne peut pas être vide.")
+    return True
+
+
+def validate_contract_data(client_id: int, commercial_contact_id: int, status: str, total_amount: int,
+                           remaining_amount: int, creation_date: str, **kwargs):
+    if not client_id:
+        raise ValueError("L'ID du client ne peut pas être vide.")
+    if not commercial_contact_id:
+        raise ValueError("L'ID du contact commercial ne peut pas être vide.")
+    if status not in [status.value for status in ContractStatus]:
+        raise ValueError("Statut de contrat invalide.")
+    if total_amount < 0:
+        raise ValueError("Le montant total ne peut pas être négatif.")
+    if remaining_amount < 0:
+        raise ValueError("Le montant restant ne peut pas être négatif.")
+    if total_amount < remaining_amount:
+        raise ValueError("Le montant restant ne peut pas être supérieur au montant total.")
+
+    # Validation de la date de création
+    try:
+        creation_date_obj = datetime.strptime(creation_date, "%Y-%m-%d")
+        if creation_date_obj > datetime.now():
+            raise ValueError("La date de création ne peut pas être dans le futur.")
+    except ValueError as e:
+        raise ValueError(f"Format de la date de création invalide. Utilisez YYYY-MM-DD. Détail de l'erreur : {e}")
+
     return True

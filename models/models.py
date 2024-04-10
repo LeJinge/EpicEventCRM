@@ -55,9 +55,9 @@ class Client(Base):
 
 
 class ContractStatus(enum.Enum):
-    IN_PROGRESS = 'In Progress'
-    SIGNED = 'Signed'
-    FINISHED = 'Finished'
+    IN_PROGRESS = 'IN_PROGRESS'
+    SIGNED = 'SIGNED'
+    FINISHED = 'FINISHED'
 
 
 class Contract(Base):
