@@ -1,3 +1,4 @@
+import traceback
 import typer
 from sqlalchemy.orm import Session, joinedload
 
@@ -81,6 +82,7 @@ def handle_client_search_by_name(user: User):
         filtered_clients = db.query(Client).filter(Client.last_name.ilike(f"%{name}%")).all()
         display_and_select_client(user, filtered_clients, db)
     except Exception as e:
+        traceback.print_exc()
         typer.echo(f"Erreur lors de la recherche des clients: {e}")
     finally:
         db.close()

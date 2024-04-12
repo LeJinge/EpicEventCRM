@@ -83,26 +83,23 @@ def navigate_user_menu(user: User):
 
 
 def navigate_user_search_menu(user: User):
-    display_search_user_menu(user)
+    display_search_client_menu(user)
     while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
         try:
-            choice = int(input("Entrez votre choix ou 0 pour quitter: "))
+            choice = int(input(
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+            if choice == 0:
+                break
+            elif choice == 1:
+                handle_search_by_name(user)
+            elif choice == 2:
+                handle_search_by_role(user)
+            elif choice == 3:
+                handle_list_all_users(user)
+            else:
+                print("Choix invalide, veuillez réessayer.")
         except ValueError:
             print("Veuillez entrer un nombre valide.")
-            continue
-
-        if choice == 0:
-            break
-        else:
-            with SessionLocal() as db:
-                if choice == 1:
-                    handle_search_by_name(db)
-                elif choice == 2:
-                    handle_search_by_role(db)
-                elif choice == 3:
-                    handle_list_all_users(db)
-                else:
-                    print("Choix invalide, veuillez réessayer.")
     navigate_user_menu(user)
 
 
@@ -115,9 +112,9 @@ def navigate_user_options(user: User):
             if choice == 0:
                 break
             elif choice == 1:
-                update_user(user.id)
+                update_user(user)
             elif choice == 2:
-                delete_user(user.id)
+                delete_user(user)
             else:
                 print("Choix invalide, veuillez réessayer.")
         except ValueError:
@@ -256,9 +253,9 @@ def navigate_contract_options(user: User, client: Client):
             if choice == 0:
                 break
             elif choice == 1:
-                update_client(client.id)
+                update_client(user, client.id)
             elif choice == 2:
-                delete_client(client.id)
+                delete_client(user, client.id)
             else:
                 print("Choix invalide, veuillez réessayer.")
         except ValueError:
@@ -277,7 +274,7 @@ def navigate_event_menu(user: User):
             elif choice == 1:
                 add_event(user)
             elif choice == 2:
-                event_search_controller(user)
+                navigate_event_search_menu(user)
             elif choice == 3:
                 break
             else:
