@@ -1,37 +1,27 @@
 import typer
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.functions import current_user
+from typer import Typer
 
-from models.models import User, UserRole
+from models.models import UserRole, User
 from utils.db import SessionLocal
 from utils.pagination import paginate_items
 from views.forms import user_form, user_update_form
-from views.menus import display_collaborator_management_menu, display_search_user_menu, display_user_options
 from views.reports import display_user_profile, display_users
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
-def handle_collaborator_management_menu():
-    while True:
-        typer.clear()
-        display_collaborator_management_menu()
-        choice = typer.prompt("Entrez votre choix (1-2) ou 0 pour revenir au menu précédent ", type=int)
-
-        if choice == 1:
-            add_user()
-            typer.pause('Appuyez sur une touche pour continuer...')
-        elif choice == 2:
-            # Logique pour rechercher un collaborateur
-            user_search_controller()
-        elif choice == 0:
-            break
-        else:
-            typer.echo("Choix invalide.")
+app = Typer()
 
 
 # Gère l'ajout d'un nouvel utilisateur
-def add_user():
+def add_user(user: User):
+    # Vérifier si l'utilisateur actuel a le droit d'ajouter un nouvel utilisateur
+    if current_user.role not in [UserRole.SUPERUSER, UserRole.GESTION]:
+        typer.echo(
+            "Action non autorisée. Seuls les superutilisateurs et les gestionnaires peuvent ajouter des utilisateurs.")
+        return
     user_data = user_form()  # Récupère les données du formulaire
     try:
         # Convertit le rôle de l'utilisateur de chaîne à Enum, après avoir validé les données
@@ -56,6 +46,7 @@ def add_user():
             db.refresh(user)
 
             typer.echo(f"Utilisateur {user.first_name} {user.last_name} créé avec succès.")
+            return
     except KeyError as e:
         typer.echo(f"Erreur: Rôle non valide.")
     except Exception as e:
@@ -65,45 +56,37 @@ def add_user():
 # Gère la récupération des utilisateurs
 
 
-def user_search_controller():
-    typer.clear()
-    display_search_user_menu()
-    choice = typer.prompt("Entrez votre choix (1-3): ", type=int)
+def handle_search_by_name(db: Session):
+    last_name = typer.prompt("Entrez le nom de famille de l'utilisateur à rechercher: ").lower()
+    filtered_users = db.query(User).filter(User.last_name.ilike(f"%{last_name}%")).all()
+    display_and_select_user(filtered_users, db)
 
-    with SessionLocal() as db:
-        if choice == 1:  # Recherche par nom
-            last_name = typer.prompt("Entrez le nom de famille de l'utilisateur à rechercher: ").lower()
-            filtered_users = db.query(User).filter(User.last_name.ilike(f"%{last_name}%")).all()
-        elif choice == 2:  # Recherche par rôle
-            role_str = typer.prompt("Entrez le rôle à rechercher (ex: Admin, User): ").upper()
-            try:
-                role = UserRole[role_str]
-                filtered_users = db.query(User).filter(User.role == role).all()
-            except KeyError:
-                typer.echo(f"Rôle '{role_str}' non reconnu.")
-                return
-        elif choice == 3:  # Afficher tous les utilisateurs
-            filtered_users = db.query(User).all()
-        else:
-            typer.echo("Choix invalide.")
-            return
 
-        if filtered_users:
-            selected_user_id = paginate_items(filtered_users, display_users)
-            if selected_user_id is not None:
-                selected_user = db.query(User).get(selected_user_id)
-                if selected_user:
-                    display_user_profile(selected_user)
-                    action_choice = display_user_options(selected_user)
-                    if action_choice == 1:
-                        update_user(selected_user.id)
-                    elif action_choice == 2:
-                        if typer.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?"):
-                            delete_user(selected_user.id)
-                            typer.echo(
-                                f"L'utilisateur {selected_user.first_name} {selected_user.last_name} a été supprimé.")
-        else:
-            typer.echo("Aucun utilisateur trouvé.")
+def handle_search_by_role(db: Session):
+    role_str = typer.prompt("Entrez le rôle à rechercher (ex: Admin, User): ").upper()
+    try:
+        role = UserRole[role_str]
+        filtered_users = db.query(User).filter(User.role == role).all()
+        display_and_select_user(filtered_users, db)
+    except KeyError:
+        typer.echo(f"Rôle '{role_str}' non reconnu.")
+
+
+def handle_list_all_users(db: Session):
+    filtered_users = db.query(User).all()
+    display_and_select_user(filtered_users, db)
+
+
+def display_and_select_user(filtered_users, db):
+    from controllers.menu_controller import navigate_user_options
+    if filtered_users:
+        selected_user_id = paginate_items(filtered_users, display_users, 10)
+        if selected_user_id:
+            selected_user = db.query(User).get(selected_user_id)
+            display_user_profile(selected_user)
+            navigate_user_options(selected_user)
+    else:
+        typer.echo("Aucun utilisateur trouvé.")
 
 
 # Gère la mise à jour d'un utilisateur
@@ -136,7 +119,12 @@ def update_user(user_id: int):
 
 
 # Gère la suppression d'un utilisateur
-def delete_user(user_id: int):
+def delete_user(user: User, user_id: int):
+    # Vérifier si l'utilisateur actuel a le droit d'ajouter un nouvel utilisateur
+    if user.role not in [UserRole.SUPERUSER]:
+        print(
+            "Action non autorisée. Seuls les superutilisateurs et les gestionnaires peuvent ajouter des utilisateurs.")
+        return
     db: Session = SessionLocal()
     user = db.query(User).filter(User.id == user_id).first()
     if user:

@@ -1,50 +1,47 @@
 import typer
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.sql.functions import user
 
 from models.models import Client, User, UserRole
 from utils.db import SessionLocal
 from utils.pagination import paginate_items
 from utils.validation import validate_client_data
 from views.forms import client_form, client_update_form
-from views.menus import display_client_management_menu, display_search_client_menu, display_client_options
 from views.reports import display_client_profile, display_clients, display_users
 
 
-def handle_client_management_menu():
-    while True:
-        typer.clear()
-        display_client_management_menu(user)
-        choice = typer.prompt("Entrez votre choix (1-2) ou 0 pour revenir au menu précédent: ", type=int)
-
-        if choice == 1:
-            # Ajouter un client
-            add_client()
-        elif choice == 2:
-            # Rechercher un client
-            client_search_controller()
-        elif choice == 0:
-            break
-        else:
-            typer.echo("Choix invalide handle_client_management_menu.")
-    return
-
-
 # Gère l'ajout d'un nouveau client
-def add_client():
+def add_client(user: User):
+    from controllers.menu_controller import navigate_client_menu
     client_data = client_form()
     try:
-        validate_client_data()
+        # Valider les données du client
+        validate_client_data(
+            first_name=client_data['first_name'],
+            last_name=client_data['last_name'],
+            email=client_data['email'],
+            phone_number=client_data['phone_number'],
+            company_name=client_data['company_name']
+        )
+
+        commercial_contact_id = client_data.get('commercial_id')
+        if not commercial_contact_id:
+            raise ValueError("Un ID commercial doit être fourni.")
 
         db: Session = SessionLocal()
+
+        # Vérifier si l'ID commercial correspond à un utilisateur avec le rôle COMMERCIALE
+        commercial_user = db.query(User).filter(User.id == commercial_contact_id,
+                                                User.role == UserRole.COMMERCIALE).first()
+        if not commercial_user:
+            raise ValueError("L'ID commercial fourni ne correspond à aucun commercial valide.")
+
         client = Client(
             first_name=client_data['first_name'],
             last_name=client_data['last_name'],
             email=client_data['email'],
             phone_number=client_data['phone_number'],
             company_name=client_data['company_name'],
-            commercial_contact_id=client_data.get('commercial_id')
+            commercial_contact_id=commercial_contact_id
         )
         db.add(client)
         db.commit()
@@ -52,6 +49,7 @@ def add_client():
         db.close()
 
         typer.echo(f"Client {client.first_name} {client.last_name} créé avec succès.")
+        return navigate_client_menu(user)
     except ValueError as e:
         typer.echo(f"Erreur: {e}")
     except Exception as e:
@@ -61,94 +59,72 @@ def add_client():
 # Gère la récupération des utilisateurs
 
 
-def display_selected_client_details(selected_client_id):
-    try:
-        with SessionLocal() as db:
-            selected_client = db.query(Client).options(
-                joinedload(Client.commercial_contact)
-            ).get(selected_client_id)
-            if selected_client:
-                typer.clear()
-                display_client_profile(selected_client)
-                action_choice = display_client_options(selected_client)
-                if action_choice == 1:
-                    # Modifier le client
-                    update_client_controller(selected_client_id)
-                elif action_choice == 2:
-                    # Supprimer le client
-                    if typer.confirm("Êtes-vous sûr de vouloir supprimer ce client ?"):
-                        delete_client_controller(selected_client_id)
-                        typer.echo(
-                            f"Le client {selected_client.first_name} {selected_client.last_name} a été supprimé.")
-            else:
-                typer.echo("Erreur lors de la récupération des détails du client sélectionné.")
-    except SQLAlchemyError as e:
-        typer.echo(f"Une erreur de base de données est survenue : {e}")
-
-
-def client_search_controller():
-    typer.clear()
-    display_search_client_menu()
-    choice = typer.prompt("Entrez votre choix (1-3): ", type=int)
-
-    try:
-        with SessionLocal() as db:
-            clients = db.query(Client).options(joinedload(Client.commercial_contact)).all()
-
-            if choice == 1:  # Recherche par nom
-                handle_search_by_name(db)
-            elif choice == 2:  # Recherche par commercial
-                handle_search_by_commercial_client(db)
-            elif choice == 3:  # Afficher tous les clients
-                handle_list_all_clients(db)
-            else:
-                typer.echo("Choix invalide.")
-    except SQLAlchemyError as e:
-        typer.echo(f"Une erreur de base de données est survenue : {e}")
-
-
-def handle_search_by_name(db):
-    name = typer.prompt("Entrez le nom de famille du client à rechercher: ").lower()
-    filtered_clients = [client for client in db.query(Client).options(joinedload(Client.commercial_contact)).all() if
-                        name in client.last_name.lower()]
+# Affichage et sélection d'un client spécifique
+def display_and_select_client(user: User, filtered_clients, db):
+    from controllers.menu_controller import navigate_client_options
     if filtered_clients:
         selected_client_id = paginate_items(filtered_clients, display_clients, 10)
         if selected_client_id:
-            display_selected_client_details(selected_client_id)
-    else:
-        typer.echo("Aucun client trouvé avec ce nom.")
-
-
-def handle_search_by_commercial_client(db):
-    commercials = db.query(User).filter(User.role == UserRole.COMMERCIALE).all()
-    if commercials:
-        selected_commercial_id = paginate_items(commercials, display_users, 10)
-        if selected_commercial_id:
-            filtered_clients = [client for client in
-                                db.query(Client).options(joinedload(Client.commercial_contact)).all() if
-                                client.commercial_contact_id == selected_commercial_id]
-            if filtered_clients:
-                selected_client_id = paginate_items(filtered_clients, display_clients, 10)
-                if selected_client_id:
-                    display_selected_client_details(selected_client_id)
-            else:
-                typer.echo("Aucun client trouvé pour ce commercial.")
-    else:
-        typer.echo("Aucun commercial trouvé.")
-
-
-def handle_list_all_clients(db):
-    all_clients = db.query(Client).options(joinedload(Client.commercial_contact)).all()
-    if all_clients:
-        selected_client_id = paginate_items(all_clients, display_clients, 10)
-        if selected_client_id:
-            display_selected_client_details(selected_client_id)
+            selected_client = db.query(Client).get(selected_client_id)
+            typer.clear()
+            display_client_profile(selected_client)  # Affiche le profil du client sélectionné
+            navigate_client_options(user, selected_client)
     else:
         typer.echo("Aucun client trouvé.")
 
 
+# Recherche de clients par nom
+def handle_client_search_by_name(user: User):
+    db = SessionLocal()
+    try:
+        name = typer.prompt("Entrez le nom de famille du client à rechercher: ").lower()
+        filtered_clients = db.query(Client).filter(Client.last_name.ilike(f"%{name}%")).all()
+        display_and_select_client(user, filtered_clients, db)
+    except Exception as e:
+        typer.echo(f"Erreur lors de la recherche des clients: {e}")
+    finally:
+        db.close()
+
+
+# Recherche de clients par commercial
+def handle_client_search_by_commercial(user: User):
+    db = SessionLocal()
+    try:
+        commercials = db.query(User).filter(User.role == UserRole.COMMERCIALE).all()
+        if commercials:
+            selected_commercial_id = paginate_items(commercials, display_users, 10)
+            if selected_commercial_id:
+                filtered_clients = db.query(Client).filter(Client.commercial_contact_id == selected_commercial_id).all()
+                if filtered_clients:
+                    display_and_select_client(user, filtered_clients, db)
+                else:
+                    typer.echo("Aucun client trouvé pour ce commercial.")
+        else:
+            typer.echo("Aucun commercial trouvé.")
+    except Exception as e:
+        typer.echo(f"Erreur lors de la recherche de clients par commercial : {e}")
+    finally:
+        db.close()
+
+
+# Listage de tous les clients
+def handle_client_list_all_clients(user: User):
+    db = SessionLocal()
+    try:
+        all_clients = db.query(Client).options(joinedload(Client.commercial_contact)).all()
+        if all_clients:
+            display_and_select_client(user, all_clients, db)
+        else:
+            typer.echo("Aucun client trouvé.")
+    except Exception as e:
+        typer.echo(f"Erreur lors du listage de tous les clients : {e}")
+    finally:
+        db.close()
+
+
 # Gère la mise à jour d'un client
-def update_client_controller(client_id: int):
+def update_client(user: User, client_id: int):
+    from controllers.menu_controller import navigate_client_menu
     db: Session = SessionLocal()
     client = db.query(Client).get(client_id)
     if not client:
@@ -182,7 +158,7 @@ def update_client_controller(client_id: int):
         print("Client mis à jour avec succès.")
         display_client_profile(client)
         typer.pause('Appuyez sur une touche pour revenir au menu "Gestion des clients"...')
-        return
+        navigate_client_menu(user)
     except Exception as e:
         db.rollback()
         print(f"Erreur lors de la mise à jour du client : {e}")
@@ -191,10 +167,13 @@ def update_client_controller(client_id: int):
 
 
 # Gère la suppression d'un client
-def delete_client_controller(client_id: int):
+def delete_client(client_id: int):
+    from controllers.menu_controller import navigate_client_menu
     db: Session = SessionLocal()
     user = db.query(Client).filter(Client.id == client_id).first()
     if user:
         db.delete(user)
         db.commit()
     db.close()
+    typer.echo("Client supprimé avec succès.")
+    navigate_client_menu(user)

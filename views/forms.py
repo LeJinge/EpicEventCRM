@@ -5,8 +5,8 @@ from rich.console import Console
 from rich.table import Table
 from sqlalchemy.orm import Session
 
-from models.models import UserRole, Client, User, ContractStatus, Contract
-from utils.choose_items import choose_client, choose_commercial
+from models.models import UserRole, Client, User, ContractStatus, Contract, Event
+from utils.choose_items import choose_client, choose_commercial, choose_contract, choose_support_contact
 from utils.db import SessionLocal
 from utils.pagination import paginate_items
 from views.reports import display_users
@@ -170,4 +170,68 @@ def contract_update_form(contract: Contract):
         "total_amount": total_amount,
         "remaining_amount": remaining_amount,
         "commercial_contact_id": selected_commercial_id,  # Ajouter l'ID du commercial sélectionné
+    }
+
+
+def event_form():
+    db: Session = SessionLocal()
+    try:
+        title = typer.prompt("Titre de l'événement")
+        start_date = typer.prompt("Date de début de l'événement (format YYYY-MM-DD)", type=str)
+        end_date = typer.prompt("Date de fin de l'événement (format YYYY-MM-DD)", type=str)
+        location = typer.prompt("Lieu de l'événement")
+        attendees = int(typer.prompt("Nombre de participants"))
+        notes = typer.prompt("Notes supplémentaires", default="")
+
+        client_id = choose_client()
+        if client_id is None:
+            return None
+
+        contract_id = choose_contract()
+        if contract_id is None:
+            return None
+
+        support_contact_id = choose_support_contact()
+        if support_contact_id is None:
+            return None
+
+        return {
+            "title": title,
+            "start_date": start_date,
+            "end_date": end_date,
+            "location": location,
+            "attendees": attendees,
+            "notes": notes,
+            "client_id": client_id,
+            "contract_id": contract_id,
+            "support_contact_id": support_contact_id
+        }
+    finally:
+        db.close()
+
+
+def event_update_form(event: Event):
+    typer.echo(f"Mise à jour de l'événement ID: {event.id}")
+
+    title = typer.prompt("Titre de l'événement", default=event.title)
+    location = typer.prompt("Lieu de l'événement", default=event.location)
+    attendees = int(typer.prompt("Nombre de participants", default=str(event.attendees)))
+    notes = typer.prompt("Notes supplémentaires", default=event.notes or "")
+
+    # Gérer la mise à jour des dates avec une validation
+    start_date = typer.prompt("Date de début de l'événement (YYYY-MM-DD)", default=event.start_date.strftime("%Y-%m-%d"))
+    end_date = typer.prompt("Date de fin de l'événement (YYYY-MM-DD)", default=event.end_date.strftime("%Y-%m-%d"))
+
+    # Permettre de changer le contact de support si nécessaire
+    typer.echo("Sélectionnez un nouveau contact de support (laissez vide pour ne pas changer) :")
+    support_contact_id = choose_support_contact() or event.support_contact_id
+
+    return {
+        "title": title,
+        "start_date": start_date,
+        "end_date": end_date,
+        "location": location,
+        "attendees": attendees,
+        "notes": notes,
+        "support_contact_id": support_contact_id
     }

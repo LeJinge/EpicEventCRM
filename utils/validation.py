@@ -55,3 +55,7 @@ def validate_contract_data(client_id: int, commercial_contact_id: int, status: s
         raise ValueError(f"Format de la date de création invalide. Utilisez YYYY-MM-DD. Détail de l'erreur : {e}")
 
     return True
+
+
+def validate_event_data(status: str):
+    pass

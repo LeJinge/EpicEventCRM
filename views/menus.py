@@ -1,175 +1,263 @@
-import typer
 from rich.console import Console
+from rich.table import Table
 
-from models.models import Client, Contract
+from models.models import User
+from utils.permissions import is_superuser, is_gestion, is_commerciale, is_support
+
+console = Console()
 
 
-# Menu principal
-def display_management_main_menu():
-    console = Console()
-    options = [
-        '1. Gérer les collaborateurs',
-        '2. Gérer les clients',
-        '3. Gérer les contrats',
-        '4. Gérer les événements'
-    ]
-    console.print("[bold magenta]Menu Gestion[/bold magenta]\n")
+def display_menu(title: str, options: list[str]) -> None:
+    """
+    Affiche un menu avec des options dans un format enrichi.
+    """
+    table = Table(title=title, show_header=False, title_style="bold magenta")
+
     for option in options:
-        console.print(option)
+        table.add_row(option)
+
+    console.print(table)
 
 
-def display_commercial_main_menu():
-    console = Console()
+def display_main_menu(user: User) -> None:
+    title = "Menu Principal"
+
+    # D'abord, déterminez le rôle de l'utilisateur
+    if is_superuser(user):
+        options = [
+            "1. Recherche",
+            "2. Gestion des collaborateurs",
+            "3. Gestion des clients",
+            "4. Gestion des contrats",
+            "5. Gestion des évènements",
+            "0. Quitter",
+        ]
+    elif is_gestion(user):
+        options = [
+            "1. Recherche",
+            "2. Gestion des collaborateurs",
+            "3. Gestion des contrats",
+            "4. Gestion des évènements",
+            "0. Quitter",
+        ]
+    elif is_commerciale(user):
+        options = [
+            "1. Recherche",
+            "2. Gestion des clients",
+            "3. Gestion des contrats",
+            "4. Gestion des évènements",
+            "0. Quitter",
+        ]
+    elif is_support(user):
+        options = [
+            "1. Recherche",
+            "2. Gestion des évènements",
+            "0. Quitter",
+        ]
+    else:
+        options = []
+
+    # Affichez le menu avec les options appropriées
+    display_menu(title, options)
+
+
+def display_search_menu() -> None:
+    title = "Menu de Recherche"
     options = [
-        '1. Gérer les clients',
-        '2. Gérer les contrats',
-        '3. Gérer les événements'
+        "1. Rechercher des collaborateurs",
+        "2. Rechercher des clients",
+        "3. Rechercher des contrats",
+        "4. Rechercher des évènements",
     ]
-    console.print("[bold magenta]Menu Gestion[/bold magenta]\n")
-    for option in options:
-        console.print(option)
-
-    input_prompt = "Entrez votre choix (1-3): "
-    console.print(input_prompt, end="", style="bold yellow")
+    display_menu(title, options)
 
 
-def display_support_main_menu():
-    console = Console()
-    options = [
-        '1. Gérer les événements'
-    ]
-    console.print("[bold magenta]Menu Gestion[/bold magenta]\n")
-    for option in options:
-        console.print(option)
-
-    input_prompt = "Entrez votre choix (1): "
-    console.print(input_prompt, end="", style="bold yellow")
-
-
-# Menu de gestion des collaborateurs
-def display_collaborator_management_menu():
-    console = Console()
-    options = [
-        "1. Ajouter un collaborateur",
-        "2. Rechercher un collaborateur",
-        "0. Retour au menu précédent",
-    ]
-    console.print("[bold magenta]Gestion des collaborateurs[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+# Affichage des menus de gestion des collaborateurs
+def display_user_management_menu(user: User) -> None:
+    title = "Gestion des Collaborateurs"
+    if is_superuser(user) or is_gestion(user):
+        options = [
+            "1. Créer un collaborateur",
+            "2. Rechercher un collaborateur",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
 
 
-def display_search_user_menu():
-    console = Console()
-    options = [
-        "1. Rechercher par nom",
-        "2. Rechercher par équipe",
-        "3. Tous les collaborateurs",
-    ]
-    console.print("[bold magenta]Rechercher un collaborateur[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+def display_search_user_menu(user: User):
+    title = "Recherche de Collaborateurs"
+    if is_superuser(user) or is_gestion(user):
+        options = [
+            "1. Rechercher par nom",
+            "2. Rechercher par équipe",
+            "3. Tous les collaborateurs",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
 
 
-def display_user_options(client: Client) -> int:
-    typer.echo(f"Options disponibles pour {client.first_name} {client.last_name}:")
-    typer.echo("1. Modifier ce collaborateur")
-    typer.echo("2. Supprimer ce collaborateur")
-    typer.echo("0. Retour")
-
-    choice = typer.prompt("Choisissez une option", type=int)
-    return choice
-
-
-# Menu de gestion des clients
-def display_client_management_menu():
-    console = Console()
-    options = [
-        "1. Ajouter un client",
-        "2. Rechercher un client",
-    ]
-    console.print("[bold magenta]Gestion des clients[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+def display_user_options(user: User):
+    title = "Options disponibles pour collaborateur"
+    if is_superuser(user):
+        options = [
+            "1. Modifier ce collaborateur",
+            "2. Supprimer ce collaborateur",
+            "0. Retour",
+        ]
+    elif is_gestion(user):
+        options = [
+            "1. Modifier ce collaborateur",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
 
 
-def display_search_client_menu():
-    console = Console()
-    options = [
-        "1. Rechercher par nom",
-        "2. Par commerciale",
-        "3. Tous les clients",
-    ]
-    console.print("[bold magenta]Rechercher un client[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+# Affichage des menus de gestion des clients
+def display_client_management_menu(user: User) -> None:
+    title = "Gestion des Clients"
+    if is_superuser(user) or is_commerciale(user):
+        options = [
+            "1. Créer un client",
+            "2. Rechercher un client",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
 
 
-def display_client_options(client: Client) -> int:
-    typer.echo(f"Options disponibles pour {client.first_name} {client.last_name}:")
-    typer.echo("1. Modifier ce client")
-    typer.echo("2. Supprimer ce client")
-    typer.echo("0. Retour")
-
-    choice = typer.prompt("Choisissez une option", type=int)
-    return choice
-
-
-# Menu de gestion des contrats
-def display_contract_management_menu():
-    console = Console()
-    options = [
-        "1. Ajouter un contrat",
-        "2. Rechercher un contrat",
-    ]
-    console.print("[bold magenta]Gestion des contrats[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+def display_search_client_menu(user: User):
+    title = "Recherche de Clients"
+    if is_superuser(user) or is_commerciale(user):
+        options = [
+            "1. Rechercher par nom",
+            "2. Rechercher par commercial",
+            "3. Tous les clients",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
 
 
-def display_search_contract_menu():
-    console = Console()
-    options = [
-        "1. Rechercher par client",
-        "2. Par commerciale",
-        "3. Par statut",
-        "4. Tous les contrats",
-    ]
-    console.print("[bold magenta]Rechercher un contrat[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+def display_client_options(user: User):
+    title = "Options disponibles pour ce client"
+    if is_superuser(user):
+        options = [
+            "1. Modifier ce client",
+            "2. Supprimer ce client",
+            "0. Retour",
+        ]
+    elif is_commerciale(user):
+        options = [
+            "1. Modifier ce client",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
 
 
-def display_contract_options(contract: Contract) -> int:
-    typer.echo(f"Options disponibles pour le contrat ID {contract.id} du client {contract.client.first_name} {contract.client.last_name}:")
-    typer.echo("1. Modifier ce contrat")
-    typer.echo("2. Supprimer ce contrat")
-    typer.echo("0. Retour")
-
-    choice = typer.prompt("Choisissez une option", type=int)
-    return choice
-
-
-# Menu de gestion des événements
-def display_event_management_menu():
-    console = Console()
-    options = [
-        "1. Ajouter un événement",
-        "2. Rechercher un événement",
-    ]
-    console.print("[bold magenta]Gestion des événements[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+# Affichage des menus de gestion des contrats
+def display_contract_management_menu(user: User) -> None:
+    title = "Gestion des Contrats"
+    if is_superuser(user) or is_commerciale(user) or is_gestion(user):
+        options = [
+            "1. Créer un contrat",
+            "2. Rechercher un contrat",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
 
 
-def display_search_event_menu():
-    console = Console()
-    options = [
-        "1. Rechercher par client",
-        "2. Par support",
-        "3. Par contrat",
-        "4. Tous les événements",
-    ]
-    console.print("[bold magenta]Rechercher un événement[/bold magenta]\n")
-    for option in options:
-        console.print(option)
+def display_search_contract_menu(user: User):
+    title = "Recherche de Contrats"
+    if is_superuser(user) or is_commerciale(user) or is_gestion(user):
+
+        options = [
+            "1. Rechercher par client",
+            "2. Rechercher par commercial",
+            "3. Tous les contrats",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
+
+
+def display_contract_options(user: User):
+    title = "Options disponibles pour ce contrat"
+    if is_superuser(user):
+        options = [
+            "1. Modifier ce contrat",
+            "2. Supprimer ce contrat",
+            "0. Retour",
+        ]
+    elif is_commerciale(user):
+        options = [
+            "1. Modifier ce contrat",
+            "0. Retour",
+        ]
+    else:
+        options = [
+            "0. Retour",
+        ]
+    display_menu(title, options)
+
+
+# Affichage des menus de gestion des évènements
+def display_event_management_menu(user: User) -> None:
+    title = "Gestion des Évènements"
+    if is_superuser(user) or is_support(user) or is_gestion(user) or is_commerciale(user):
+        options = [
+            "1. Créer un évènement",
+            "2. Rechercher un évènement",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
+
+
+def display_search_event_menu(user: User):
+    title = "Recherche d'Évènements"
+    if is_superuser(user) or is_support(user) or is_gestion(user) or is_commerciale(user):
+        options = [
+            "1. Rechercher par contrat",
+            "2. Rechercher par support",
+            "3. Évènements sans support",
+            "4. Rechercher par client",
+            "5. Tous les évènements",
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)
+
+
+def display_event_options(user: User):
+    title = "Options disponibles pour cet évènement"
+    if is_superuser(user):
+        options = [
+            "1. Modifier cet évènement",
+            "2. Supprimer cet évènement",
+            "0. Retour",
+        ]
+    elif is_gestion(user) or is_support(user):
+        options = [
+            "1. Modifier cet évènement",
+            "0. Retour",
+        ]
+    elif is_commerciale(user):
+        options = [
+            "0. Retour",
+        ]
+    else:
+        options = ["Accès refusé."]
+    display_menu(title, options)

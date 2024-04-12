@@ -3,7 +3,7 @@ from typing import List
 from rich.console import Console
 from rich.table import Table
 
-from models.models import User, Client, Contract
+from models.models import User, Client, Contract, Event
 
 
 def display_users(users: List[User], start_index: int) -> Table:
@@ -150,6 +150,53 @@ def display_contract_profile(contract: Contract):
     table.add_row("Montant Total", str(contract.total_amount))
     table.add_row("Montant Restant", str(contract.remaining_amount))
     table.add_row("Date de Création", creation_date)
+
+    console.print(table)
+
+
+def display_events(events: List[Event], start_index: int) -> Table:
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("Index", style="dim", width=6)
+    table.add_column("ID", width=12)
+    table.add_column("Nom", min_width=20)
+    table.add_column("Date", min_width=20)
+    table.add_column("Lieu", min_width=20)
+    table.add_column("Client", min_width=20)
+    table.add_column("Contact Commercial", min_width=20)
+
+    for index, event in enumerate(events, start=start_index):
+        client_name = f"{event.client.first_name} {event.client.last_name}"
+        commercial_name = f"{event.commercial_contact.first_name} {event.commercial_contact.last_name}"
+        date = event.date.strftime("%Y-%m-%d")
+
+        table.add_row(
+            str(index),
+            str(event.id),
+            event.name,
+            date,
+            event.location,
+            client_name,
+            commercial_name
+        )
+
+    return table
+
+
+def display_event_profile(event: Event):
+    console = Console()
+    table = Table(show_header=False, header_style="bold magenta")
+    table.add_column("Champ", style="dim", width=20)
+    table.add_column("Valeur", min_width=20)
+
+    client_name = f"{event.client.first_name} {event.client.last_name}"
+    commercial_name = f"{event.commercial_contact.first_name} {event.commercial_contact.last_name}"
+    date = event.date.strftime("%Y-%m-%d")
+
+    table.add_row("Nom", event.name)
+    table.add_row("Date", date)
+    table.add_row("Lieu", event.location)
+    table.add_row("Client", client_name)
+    table.add_row("Contact Commercial", commercial_name)
 
     console.print(table)
 

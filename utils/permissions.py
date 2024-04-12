@@ -1,17 +1,18 @@
-from models.models import UserRole
+# Définir la fonction en prenant l'objet User
+from models.models import User, UserRole
 
 
-def is_superuser(user_role) -> bool:
-    return user_role == UserRole.SUPERUSER
+def is_superuser(user: User) -> bool:
+    return user.role == UserRole.SUPERUSER
 
 
-def is_gestion(user_role) -> bool:
-    return user_role == UserRole.GESTION
+def is_gestion(user: User) -> bool:
+    return user.role == UserRole.GESTION
 
 
-def is_commerciale(user_role) -> bool:
-    return user_role == UserRole.COMMERCIALE
+def is_commerciale(user: User) -> bool:
+    return user.role == UserRole.COMMERCIALE
 
 
-def is_support(user_role) -> bool:
-    return user_role == UserRole.SUPPORT
+def is_support(user: User) -> bool:
+    return user.role == UserRole.SUPPORT
