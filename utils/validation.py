@@ -57,5 +57,5 @@ def validate_contract_data(client_id: int, commercial_contact_id: int, status: s
     return True
 
 
-def validate_event_data(status: str):
+def validate_event_data():
     pass

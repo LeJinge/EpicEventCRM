@@ -6,9 +6,9 @@ from utils.security import pwd_context
 def authenticate_user(email: str, password: str) -> User:
     session = SessionLocal()
     try:
-        user = session.query(User).filter(User.email == email).first()
-        if user and pwd_context.verify(password, user.password):
-            return user  # Retourner l'objet User complet
+        connected_user = session.query(User).filter(User.email == email).first()
+        if connected_user and pwd_context.verify(password, connected_user.password):
+            return connected_user
     finally:
         session.close()
-    return None  # Retourner None si l'authentification échoue
+    return None

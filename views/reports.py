@@ -51,13 +51,12 @@ def display_user_profile(user: User):
 
 def display_clients(clients: List[Client], start_index: int) -> Table:
     table = Table(show_header=True, header_style="bold magenta")
-    table.add_column("Index", style="dim", width=6)  # Pour afficher l'indexation sur la page
+    table.add_column("Numéro", style="dim", width=6)  # Unifié avec "Numéro" comme dans display_users
     table.add_column("ID", width=12)
-    table.add_column("Prénom", min_width=20)
-    table.add_column("Nom", min_width=20)
+    table.add_column("Prénom et Nom", min_width=40)  # Combiné pour la cohérence
     table.add_column("Nom de l'entreprise", min_width=20)
     table.add_column("Email", min_width=20)
-    table.add_column("Contact Commercial", min_width=20)
+    table.add_column("Contact Commercial", min_width=30)  # Plus large pour noms complets
 
     for index, client in enumerate(clients, start=start_index):
         full_name = f"{client.first_name or ''} {client.last_name or ''}".strip()
@@ -71,8 +70,7 @@ def display_clients(clients: List[Client], start_index: int) -> Table:
         table.add_row(
             str(index),
             str(client.id),
-            client.first_name or "",
-            client.last_name or "",
+            full_name,
             company_name,
             email,
             commercial_full_name
@@ -87,13 +85,16 @@ def display_client_profile(client: Client):
     table.add_column("Champ", style="dim", width=12)
     table.add_column("Valeur", justify="right")
 
-    # Ajout des informations de l'utilisateur dans le tableau
-    table.add_row("Nom", client.last_name)
-    table.add_row("Prénom", client.first_name)
-    table.add_row("Email", client.email)
-    table.add_row("Numéro de téléphone", client.phone_number)
-    table.add_row("Nom de l'entreprise", client.company_name)
-    commercial_full_name = f"{client.commercial_contact.first_name} {client.commercial_contact.last_name}"
+    # Ajout des informations du client dans le tableau
+    table.add_row("Nom", client.last_name or "N/A")
+    table.add_row("Prénom", client.first_name or "N/A")
+    table.add_row("Email", client.email or "N/A")
+    table.add_row("Numéro de téléphone", client.phone_number or "N/A")
+    table.add_row("Nom de l'entreprise", client.company_name or "N/A")
+
+    commercial_full_name = "N/A"
+    if client.commercial_contact:
+        commercial_full_name = f"{client.commercial_contact.first_name or ''} {client.commercial_contact.last_name or ''}".strip()
     table.add_row("Commerciale", commercial_full_name)
 
     # Affichage du tableau
@@ -159,24 +160,31 @@ def display_events(events: List[Event], start_index: int) -> Table:
     table.add_column("Index", style="dim", width=6)
     table.add_column("ID", width=12)
     table.add_column("Nom", min_width=20)
-    table.add_column("Date", min_width=20)
+    table.add_column("Date de Début", min_width=20)
+    table.add_column("Date de Fin", min_width=20)
     table.add_column("Lieu", min_width=20)
     table.add_column("Client", min_width=20)
-    table.add_column("Contact Commercial", min_width=20)
+    table.add_column("Contact Support", min_width=20)
+    table.add_column("Nombre de Participants", min_width=20)
+    table.add_column("Identifiant du Contrat", min_width=20)
 
     for index, event in enumerate(events, start=start_index):
         client_name = f"{event.client.first_name} {event.client.last_name}"
-        commercial_name = f"{event.commercial_contact.first_name} {event.commercial_contact.last_name}"
-        date = event.date.strftime("%Y-%m-%d")
+        support_name = event.support_contact.first_name + " " + event.support_contact.last_name if event.support_contact else "Non assigné"
+        start_date = event.start_date.strftime("%Y-%m-%d")
+        end_date = event.end_date.strftime("%Y-%m-%d")
 
         table.add_row(
             str(index),
             str(event.id),
-            event.name,
-            date,
+            event.title,
+            start_date,
+            end_date,
             event.location,
             client_name,
-            commercial_name
+            support_name,
+            str(event.attendees),
+            str(event.contract_id)
         )
 
     return table
@@ -189,14 +197,20 @@ def display_event_profile(event: Event):
     table.add_column("Valeur", min_width=20)
 
     client_name = f"{event.client.first_name} {event.client.last_name}"
-    commercial_name = f"{event.commercial_contact.first_name} {event.commercial_contact.last_name}"
-    date = event.date.strftime("%Y-%m-%d")
+    if event.support_contact:
+        support_name = f"{event.support_contact.first_name} {event.support_contact.last_name}"
+    else:
+        support_name = "Non assigné"
+    start_date = event.start_date.strftime("%Y-%m-%d")
+    end_date = event.end_date.strftime("%Y-%m-%d")
+    location = event.location
+    attendees = event.attendees
 
-    table.add_row("Nom", event.name)
-    table.add_row("Date", date)
-    table.add_row("Lieu", event.location)
     table.add_row("Client", client_name)
-    table.add_row("Contact Commercial", commercial_name)
+    table.add_row("Contact Support", support_name)
+    table.add_row("Date de Début", start_date)
+    table.add_row("Date de Fin", end_date)
+    table.add_row("Lieu", location)
+    table.add_row("Nombre de Participants", str(attendees))
 
     console.print(table)
-

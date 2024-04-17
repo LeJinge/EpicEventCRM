@@ -3,15 +3,15 @@ import typer
 from controllers.client_management import add_client, update_client, delete_client, \
     handle_client_search_by_name, handle_client_search_by_commercial, handle_client_list_all_clients
 from controllers.contract_management import add_contract, handle_search_contract_by_client, \
-    handle_search_contract_by_commercial, handle_search_all_contracts
+    handle_search_contract_by_commercial, handle_search_all_contracts, update_contract, delete_contract, \
+    handle_search_contracts_in_progress, handle_search_contracts_not_fully_paid
 from controllers.event_management import add_event, update_event, \
     handle_search_event_by_contract, handle_search_event_by_support_contact, \
     handle_search_event_without_support_contact, handle_search_event_by_client, handle_search_all_events, delete_event
 from controllers.logout_controller import logout
-from controllers.user_management import add_user, handle_search_by_name, handle_search_by_role, handle_list_all_users, \
-    update_user, delete_user
-from models.models import User, Client, Event
-from utils.db import SessionLocal
+from controllers.user_management import add_user, handle_user_search_by_role, handle_list_all_users, \
+    update_user, delete_user, handle_user_search_by_name
+from models.models import User, Client, Event, Contract
 from utils.permissions import is_superuser, is_gestion, is_commerciale, is_support
 from views.menu import display_main_menu, display_contract_management_menu, display_event_management_menu, \
     display_client_management_menu, display_search_user_menu, display_user_management_menu, display_user_options, \
@@ -19,314 +19,359 @@ from views.menu import display_main_menu, display_contract_management_menu, disp
     display_contract_options, display_event_options, display_search_event_menu
 
 
-def navigate_main_menus(user: User):
-    display_main_menu(user)
-    try:
-        choice = int(input("Entrez votre choix ou 0 pour quitter: "))
-    except ValueError:
-        print("Veuillez entrer un nombre valide.")
-        return navigate_main_menus(user)
-
-    if choice == 0:
-        logout()
-    elif choice == 1:
-        navigate_search_menu(user)
-    else:
-        if is_superuser(user):
-            if choice == 2:
-                navigate_user_menu(user)
-            elif choice == 3:
-                navigate_client_menu(user)
-            elif choice == 4:
-                navigate_contract_menu(user)
-            elif choice == 5:
-                navigate_event_menu(user)
-        elif is_gestion(user):
-            if choice == 2:
-                navigate_user_menu(user)
-            elif choice == 3:
-                navigate_contract_menu(user)
-            elif choice == 4:
-                navigate_event_menu(user)
-        elif is_commerciale(user):
-            if choice == 2:
-                navigate_client_menu(user)
-            elif choice == 3:
-                navigate_contract_menu(user)
-            elif choice == 4:
-                navigate_event_menu(user)
-        elif is_support(user):
-            if choice == 2:
-                navigate_event_menu(user)
-        else:
-            print("Choix invalide, veuillez réessayer.")
-            return navigate_main_menus(user)
-
-
-def navigate_user_menu(user: User):
-    display_user_management_menu(user)
-    while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                break
-            elif choice == 1:
-                add_user(user)
-            elif choice == 2:
-                navigate_user_search_menu(user)
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-    navigate_main_menus(user)
-
-
-def navigate_user_search_menu(user: User):
-    display_search_client_menu(user)
-    while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                break
-            elif choice == 1:
-                handle_search_by_name(user)
-            elif choice == 2:
-                handle_search_by_role(user)
-            elif choice == 3:
-                handle_list_all_users(user)
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-    navigate_user_menu(user)
-
-
-def navigate_user_options(user: User):
-    display_user_options(user)
-    while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                break
-            elif choice == 1:
-                update_user(user)
-            elif choice == 2:
-                delete_user(user)
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-    navigate_user_menu(user)
-
-
-def navigate_search_menu(user: User):
-    display_search_menu()
+def navigate_main_menus(connected_user: User):
     while True:
+        try:
+            typer.clear()
+            display_main_menu(connected_user)
+            choice = int(typer.prompt("Entrez votre choix ou 0 pour quitter "))
+        except ValueError:
+            typer.echo("Choix invalide, veuillez réessayer.")
+            return
+
+        if choice == 0:
+            logout()
+        elif choice == 1:
+            navigate_search_menu(connected_user)
+        else:
+            if is_superuser(connected_user):
+                if choice == 2:
+                    navigate_user_menu(connected_user)
+                elif choice == 3:
+                    navigate_client_menu(connected_user)
+                elif choice == 4:
+                    navigate_contract_menu(connected_user)
+                elif choice == 5:
+                    navigate_event_menu(connected_user)
+            elif is_gestion(connected_user):
+                if choice == 2:
+                    navigate_user_menu(connected_user)
+                elif choice == 3:
+                    navigate_contract_menu(connected_user)
+                elif choice == 4:
+                    navigate_event_menu(connected_user)
+            elif is_commerciale(connected_user):
+                if choice == 2:
+                    navigate_client_menu(connected_user)
+                elif choice == 3:
+                    navigate_contract_menu(connected_user)
+                elif choice == 4:
+                    navigate_event_menu(connected_user)
+            elif is_support(connected_user):
+                if choice == 2:
+                    navigate_event_menu(connected_user)
+            else:
+                typer.echo("Choix invalide, veuillez réessayer.")
+                return navigate_main_menus(connected_user)
+
+
+def navigate_user_menu(connected_user: User):
+    if is_superuser(connected_user) or is_gestion(connected_user):
+        while True:
+            typer.clear()
+            display_user_management_menu(connected_user)
+            try:
+                choice = int(typer.prompt(
+                    "Entrez votre choix (Entrez votre choix ou 0 pour quitter) "))
+                if choice == 0:
+                    break
+                elif choice == 1:
+                    add_user(connected_user)
+                elif choice == 2:
+                    navigate_user_search_menu(connected_user)
+                else:
+                    typer.echo("Choix invalide, veuillez réessayer.")
+            except ValueError:
+                typer.echo("Choix invalide, veuillez réessayer.")
+        return
+
+    else:
+        print("Accès refusé.")
+        return
+
+
+def navigate_user_search_menu(connected_user: User):
+    while True:
+        typer.clear()
+        display_search_user_menu(connected_user)
+        try:
+            choice = int(input(
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+            if choice == 0:
+                break
+            elif choice == 1:
+                handle_user_search_by_name(connected_user)
+            elif choice == 2:
+                handle_user_search_by_role(connected_user)
+            elif choice == 3:
+                handle_list_all_users(connected_user)
+            else:
+                print("Choix invalide, veuillez réessayer.")
+        except ValueError:
+            print("Choix invalide, veuillez réessayer.")
+    return
+
+
+def navigate_user_options(connected_user: User, selected_user: User):
+    while True:
+        display_user_options(connected_user)
+        try:
+            choice = int(input(
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+            if choice == 0:
+                break
+            elif choice == 1:
+                update_user(connected_user, selected_user.id)
+            elif choice == 2:
+                delete_user(connected_user, selected_user.id)
+            else:
+                print("Choix invalide, veuillez réessayer.")
+        except ValueError:
+            print("Choix invalide, veuillez réessayer.")
+    return
+
+
+def navigate_search_menu(connected_user: User):
+    while True:
+        display_search_menu()
         try:
             choice = typer.prompt("Entrez votre choix (1-4): ", type=int)
 
             if choice == 1:
-                navigate_user_search_menu(user),
+                navigate_user_search_menu(connected_user),
             elif choice == 2:
-                navigate_client_search_menu(user),
+                navigate_client_search_menu(connected_user),
             elif choice == 3:
-                navigate_contract_menu(user),
+                navigate_contract_menu(connected_user),
             elif choice == 4:
-                navigate_event_menu(user),
+                navigate_event_menu(connected_user),
             elif choice == 0:
                 break
             else:  # Choix invalide
-                print("Choix invalide, veuillez réessayer.")
+                typer.echo("Choix invalide, veuillez réessayer.")
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            typer.echo("Choix invalide, veuillez réessayer.")
 
 
-def navigate_client_menu(user: User):
-    display_client_management_menu(user)
+def navigate_client_menu(connected_user: User):
     while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
+        typer.clear()
+        display_client_management_menu(connected_user)
         try:
             choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter navigate_client_menu): "))
             if choice == 0:
                 break
             elif choice == 1:
-                add_client(user)
+                add_client(connected_user)
             elif choice == 2:
-                navigate_client_search_menu(user)
+                navigate_client_search_menu(connected_user)
             else:
                 print("Choix invalide, veuillez réessayer.")
         except ValueError:
             print("Veuillez entrer un nombre valide.")
-    navigate_main_menus(user)
+    navigate_main_menus(connected_user)
 
 
-def navigate_client_search_menu(user: User):
-    display_search_client_menu(user)
+def navigate_client_search_menu(connected_user: User):
     while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
+        typer.clear()
+        display_search_client_menu(connected_user)
         try:
             choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter navigate_client_search_menu): "))
             if choice == 0:
                 break
             elif choice == 1:
-                handle_client_search_by_name(user)
+                handle_client_search_by_name(connected_user)
             elif choice == 2:
-                handle_client_search_by_commercial(user)
+                handle_client_search_by_commercial(connected_user)
             elif choice == 3:
-                handle_client_list_all_clients(user)
+                handle_client_list_all_clients(connected_user)
             else:
                 print("Choix invalide, veuillez réessayer.")
         except ValueError:
             print("Veuillez entrer un nombre valide.")
-    navigate_client_menu(user)
 
 
-def navigate_client_options(user: User, client: Client):
-    display_client_options(user)
+def navigate_client_options(connected_user: User, client: Client):
     while True:
+        display_client_options(connected_user)
+        try:
+            choice = int(input(
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+            if choice == 0:
+                navigate_client_menu(connected_user)
+            elif choice == 1:
+                update_client(connected_user, client.id)
+            elif choice == 2:
+                delete_client(connected_user, client.id)
+            else:
+                print("Choix invalide, veuillez réessayer.")
+        except ValueError:
+            print("Veuillez entrer un nombre valide.")
+
+
+def navigate_contract_menu(connected_user: User):
+    typer.clear()
+    while True:
+        display_contract_management_menu(connected_user)
+        if is_superuser(connected_user) or is_gestion(connected_user):
+            try:
+                choice = int(input(
+                    "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+                if choice == 0:
+                    break
+                elif choice == 1:
+                    add_contract(connected_user)
+                elif choice == 2:
+                    navigate_contract_search_menu(connected_user)
+                else:
+                    print("Choix invalide, veuillez réessayer.")
+            except ValueError:
+                print("Veuillez entrer un nombre valide.")
+        elif is_commerciale(connected_user):
+            try:
+                choice = int(input(
+                    "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+                if choice == 0:
+                    break
+                elif choice == 1:
+                    navigate_contract_search_menu(connected_user)
+                else:
+                    print("Choix invalide, veuillez réessayer.")
+            except ValueError:
+                print("Veuillez entrer un nombre valide.")
+        else:
+            typer.echo("Accès refusé.")
+            return
+
+        navigate_main_menus(connected_user)
+
+
+def navigate_contract_search_menu(connected_user: User):
+    typer.clear()
+    while True:
+        display_search_contract_menu(connected_user)
         try:
             choice = int(input(
                 "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
             if choice == 0:
                 break
             elif choice == 1:
-                update_client(user, client.id)
+                handle_search_contract_by_client(connected_user)
             elif choice == 2:
-                delete_client(client.id)
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-    navigate_client_menu(user)
-
-
-def navigate_contract_menu(user: User):
-    display_contract_management_menu(user)
-    while True:
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                break
-            elif choice == 1:
-                add_contract(user)
-            elif choice == 2:
-                navigate_contract_search_menu(user)
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-
-    navigate_main_menus(user)
-
-
-def navigate_contract_search_menu(user: User):
-    display_search_contract_menu(user)
-    while True:
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                break
-            elif choice == 1:
-                handle_search_contract_by_client(user)
-            elif choice == 2:
-                handle_search_contract_by_commercial(user)
+                handle_search_contract_by_commercial(connected_user)
             elif choice == 3:
-                handle_search_all_contracts(user)
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-    navigate_contract_menu(user)
-
-
-def navigate_contract_options(user: User, client: Client):
-    display_contract_options(user)
-    while True:
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                break
-            elif choice == 1:
-                update_client(user, client.id)
-            elif choice == 2:
-                delete_client(user, client.id)
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-    navigate_client_menu(user)
-
-
-def navigate_event_menu(user: User):
-    display_event_management_menu(user)
-    while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                return
-            elif choice == 1:
-                add_event(user)
-            elif choice == 2:
-                navigate_event_search_menu(user)
-            elif choice == 3:
-                break
-            else:
-                print("Choix invalide, veuillez réessayer.")
-        except ValueError:
-            print("Veuillez entrer un nombre valide.")
-
-    navigate_main_menus(user)
-
-
-def navigate_event_search_menu(user: User):
-    display_search_event_menu(user)
-    while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
-        try:
-            choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
-            if choice == 0:
-                break
-            elif choice == 1:
-                handle_search_event_by_contract(user)
-            elif choice == 2:
-                handle_search_event_by_support_contact(user)
-            elif choice == 3:
-                handle_search_event_without_support_contact(user)
+                handle_search_contracts_in_progress(connected_user)
             elif choice == 4:
-                handle_search_event_by_client(user)
+                handle_search_contracts_not_fully_paid(connected_user)
             elif choice == 5:
-                handle_search_all_events(user)
+                handle_search_all_contracts(connected_user)
             else:
                 print("Choix invalide, veuillez réessayer.")
         except ValueError:
             print("Veuillez entrer un nombre valide.")
-    navigate_event_menu(user)
+    navigate_contract_menu(connected_user)
 
 
-def navigate_event_options(user: User, event: Event):
-    display_event_options(user)
+def navigate_contract_options(connected_user: User, contract: Contract):
     while True:
+        display_contract_options(connected_user)
         try:
             choice = int(input(
                 "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
             if choice == 0:
                 break
             elif choice == 1:
-                update_event(event.id)
+                update_contract(connected_user, contract.id)
             elif choice == 2:
-                delete_event(event.id)
+                delete_contract(connected_user, contract.id)
             else:
                 print("Choix invalide, veuillez réessayer.")
         except ValueError:
             print("Veuillez entrer un nombre valide.")
-    navigate_event_menu(user)
+    navigate_contract_menu(connected_user)
+
+
+def navigate_event_menu(connected_user: User):
+    display_event_management_menu(connected_user)
+    while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
+        if is_superuser(connected_user) or is_commerciale(connected_user):
+            try:
+                choice = int(input(
+                    "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+                if choice == 1:
+                    add_event(connected_user)
+                elif choice == 2:
+                    navigate_event_search_menu(connected_user)
+                elif choice == 0:
+                    break
+                else:
+                    print("Choix invalide, veuillez réessayer.")
+                    continue
+            except ValueError:
+                print("Veuillez entrer un nombre valide.")
+        elif is_gestion(connected_user) or is_support(connected_user):
+            try:
+                choice = int(input(
+                    "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+                if choice == 1:
+                    navigate_event_search_menu(connected_user)
+                elif choice == 0:
+                    break
+                else:
+                    typer.echo("Choix invalide, veuillez réessayer.")
+                    continue
+            except ValueError:
+                typer.echo("Veuillez entrer un nombre valide.")
+        else:
+            typer.echo("Accès refusé.")
+        navigate_main_menus(connected_user)
+
+
+def navigate_event_search_menu(connected_user: User):
+    display_search_event_menu(connected_user)
+    while True:  # Boucle jusqu'à ce que l'utilisateur choisisse de sortir
+        try:
+            choice = int(input(
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+            if choice == 0:
+                break
+            elif choice == 1:
+                handle_search_event_by_contract(connected_user)
+            elif choice == 2:
+                handle_search_event_by_support_contact(connected_user)
+            elif choice == 3:
+                handle_search_event_without_support_contact(connected_user)
+            elif choice == 4:
+                handle_search_event_by_client(connected_user)
+            elif choice == 5:
+                handle_search_all_events(connected_user)
+            else:
+                print("Choix invalide, veuillez réessayer.")
+        except ValueError:
+            print("Veuillez entrer un nombre valide.")
+    navigate_event_menu(connected_user)
+
+
+def navigate_event_options(connected_user: User, event: Event):
+    while True:
+        display_event_options(connected_user)
+        try:
+            choice = int(input(
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
+            if choice == 0:
+                break
+            elif choice == 1:
+                update_event(connected_user, event.id)
+            elif choice == 2:
+                delete_event(connected_user, event.id)
+            else:
+                print("Choix invalide, veuillez réessayer.")
+        except ValueError:
+            print("Veuillez entrer un nombre valide.")
+    navigate_event_menu(connected_user)
 
 
 def main_menu(user):
