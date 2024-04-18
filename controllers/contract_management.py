@@ -1,10 +1,8 @@
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.exc import SQLAlchemyError
+import typer
+from sqlalchemy.orm import Session
 
 from models.models import Contract, UserRole, User, Client
 from utils.db import SessionLocal
-import typer
-
 from utils.pagination import paginate_items
 from utils.permissions import is_superuser, is_gestion, is_commerciale
 from utils.validation import validate_contract_data

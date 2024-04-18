@@ -1,12 +1,10 @@
 import typer
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.orm import Session
 
 from models.models import User, Event, Contract, UserRole, Client
 from utils.db import SessionLocal
 from utils.pagination import paginate_items
 from utils.permissions import is_superuser, is_gestion, is_support
-from utils.validation import validate_event_data
 from views.forms import event_form, event_update_form
 from views.reports import display_event_profile, display_contracts, display_events, display_users, display_clients
 

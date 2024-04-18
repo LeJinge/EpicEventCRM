@@ -1,4 +1,3 @@
-import traceback
 import typer
 from sqlalchemy.orm import Session, joinedload
 
@@ -162,8 +161,10 @@ def update_client(connected_user: User, client_id: int):
             client.commercial_contact_id = update_data.get('commercial_id', client.commercial_contact_id)
 
             db.commit()
-            print("Client mis à jour avec succès.")
+            typer.echo("Client mis à jour avec succès.")
             display_client_profile(client)
+            typer.pause("Appuyez sur Entrée pour continuer...")
+            navigate_client_menu(connected_user)
         except Exception as e:
             db.rollback()
             print(f"Erreur lors de la mise à jour du client : {e}")

@@ -5,11 +5,9 @@ from rich.console import Console
 from rich.table import Table
 from sqlalchemy.orm import Session
 
-from models.models import UserRole, Client, User, ContractStatus, Contract, Event
+from models.models import UserRole, Client, ContractStatus
 from utils.choose_items import choose_client, choose_commercial, choose_contract, choose_support_contact
 from utils.db import SessionLocal
-from utils.pagination import paginate_items
-from views.reports import display_users
 
 
 def user_form() -> dict:
@@ -74,25 +72,13 @@ def client_update_form(client: Client) -> dict:
     table.add_column("Prénom", min_width=20)
     table.add_column("Nom", min_width=20)
 
-    # Récupération des commerciaux
-    db: Session = SessionLocal()
-    commerciaux = db.query(User).filter(User.role == UserRole.COMMERCIALE).all()
-    db.close()
-
-    # Affichage des commerciaux disponibles
+    # Utilisation de choose_commercial pour la sélection du commercial
     console.print("\nCommerciaux disponibles :")
-    for index, commercial in enumerate(commerciaux, start=1):
-        table.add_row(str(index), commercial.first_name, commercial.last_name)
-    console.print(table)
+    commercial_id = choose_commercial()
 
-    # Sélection du commercial
-    commercial_index = typer.prompt("Sélectionnez le numéro du commercial assigné (laissez vide si aucun)", default="",
-                                    show_default=False)
-
-    if commercial_index.isdigit() and 0 < int(commercial_index) <= len(commerciaux):
-        commercial_id = commerciaux[int(commercial_index) - 1].id
-    else:
-        commercial_id = None
+    if commercial_id is None:
+        typer.echo("Aucun commercial sélectionné, laissant inchangé.")
+        commercial_id = client.commercial_contact_id  # Conserver l'ID existant si aucune entrée
 
     # Mise à jour des autres informations du client
     first_name = typer.prompt("Prénom", default=client.first_name, show_default=True)
@@ -152,34 +138,27 @@ def contract_update_form(contract):
 
     # Mise à jour du statut
     typer.echo("Choisissez le statut du contrat :")
-    status_options = list(ContractStatus)
-    for idx, status in enumerate(status_options, start=1):
-        typer.echo(f"{idx}. {status.value}")
+    status_options = {idx: status.value for idx, status in enumerate(ContractStatus, start=1)}
+    for idx, status in status_options.items():
+        typer.echo(f"{idx}. {status}")
 
-    status_choice = typer.prompt("Entrez le numéro correspondant au statut (laissez vide pour ne pas modifier) :",
+    status_choice = typer.prompt("Entrez le numéro correspondant au statut (laissez vide pour ne pas modifier) ",
                                  default="", show_default=False)
-    if status_choice.isdigit() and 0 < int(status_choice) <= len(status_options):
-        status = status_options[int(status_choice) - 1].value
-    else:
-        status = contract.status  # Conserve la valeur actuelle si aucune nouvelle entrée
+    status = status_options.get(int(status_choice), contract.status) if status_choice.isdigit() else contract.status
 
-    # Montants (inchangés)
-    total_amount = int(typer.prompt("Montant total du contrat (laisser vide pour ne pas modifier): ",
-                                    default=str(contract.total_amount)))
-    remaining_amount = int(typer.prompt("Montant restant du contrat (laisser vide pour ne pas modifier): ",
-                                        default=str(contract.remaining_amount)))
+    # Montants (option de laisser inchangé avec la possibilité de modifier)
+    total_amount = typer.prompt("Montant total du contrat (laisser vide pour ne pas modifier): ",
+                                default=str(contract.total_amount))
+    remaining_amount = typer.prompt("Montant restant du contrat (laisser vide pour ne pas modifier): ",
+                                    default=str(contract.remaining_amount))
+    # Convertir en int si changé, sinon garder les valeurs originales
+    total_amount = int(total_amount) if total_amount.isdigit() else contract.total_amount
+    remaining_amount = int(remaining_amount) if remaining_amount.isdigit() else contract.remaining_amount
 
-    # Sélection du contact commercial
+    # Sélection du contact commercial (simplifiée avec utilisation de choose_commercial)
     typer.echo("Sélectionnez un nouveau contact commercial (laissez vide pour ne pas changer) :")
-    with SessionLocal() as db:
-        commercials = db.query(User).filter(User.role == UserRole.COMMERCIALE).all()
-        if commercials:
-            selected_commercial_id = paginate_items(commercials, display_users,
-                                                      10)  # Utilisation de paginate_items pour l'affichage
-            if selected_commercial_id is None:
-                selected_commercial_id = contract.commercial_contact_id  # Conserver l'ID existant si aucune entrée
-        else:
-            selected_commercial_id = contract.commercial_contact_id  # Aucun commercial disponible
+    selected_commercial_id = choose_commercial()
+    selected_commercial_id = selected_commercial_id or contract.commercial_contact_id
 
     return {
         "status": status,
@@ -238,8 +217,10 @@ def event_update_form(event):
     db: Session = SessionLocal()
     try:
         title = typer.prompt("Titre de l'événement", default=event.title)
-        start_date = typer.prompt("Date de début de l'événement (format YYYY-MM-DD)", default=event.start_date.strftime("%Y-%m-%d"))
-        end_date = typer.prompt("Date de fin de l'événement (format YYYY-MM-DD)", default=event.end_date.strftime("%Y-%m-%d"))
+        start_date = typer.prompt("Date de début de l'événement (format YYYY-MM-DD)",
+                                  default=event.start_date.strftime("%Y-%m-%d"))
+        end_date = typer.prompt("Date de fin de l'événement (format YYYY-MM-DD)",
+                                default=event.end_date.strftime("%Y-%m-%d"))
         location = typer.prompt("Lieu de l'événement", default=event.location)
         attendees = int(typer.prompt("Nombre de participants", default=str(event.attendees)))
         notes = typer.prompt("Notes supplémentaires", default=event.notes)
@@ -256,7 +237,8 @@ def event_update_form(event):
         else:
             contract_id = event.contract_id
 
-        typer.echo("Modifier le contact de support pour l'événement ? (Oui pour changer, appuyez sur Entrée pour garder l'actuel)")
+        typer.echo(
+            "Modifier le contact de support pour l'événement ? (Oui pour changer, appuyez sur Entrée pour garder l'actuel)")
         if typer.confirm('text'):
             support_contact_id = choose_support_contact()
         else:

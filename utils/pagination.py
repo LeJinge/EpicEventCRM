@@ -1,4 +1,5 @@
-from typing import List, Callable, Any, Optional
+from typing import List, Callable, Any
+
 from rich.console import Console
 from rich.table import Table
 

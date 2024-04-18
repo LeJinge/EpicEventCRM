@@ -159,7 +159,7 @@ def navigate_client_menu(connected_user: User):
         display_client_management_menu(connected_user)
         try:
             choice = int(input(
-                "Entrez votre choix (Entrez votre choix ou 0 pour quitter navigate_client_menu): "))
+                "Entrez votre choix (Entrez votre choix ou 0 pour quitter): "))
             if choice == 0:
                 break
             elif choice == 1:
