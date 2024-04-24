@@ -1,3 +1,4 @@
+import sentry_sdk
 import typer
 from passlib.context import CryptContext
 
@@ -6,6 +7,8 @@ from utils.db import SessionLocal
 from utils.pagination import paginate_items
 from utils.permissions import is_superuser, is_gestion
 from views.forms import user_form, user_update_form
+from views.messages import action_not_authorised, user_not_found, invalid_choice_try_again, update_user_success, \
+    delete_user_success
 from views.reports import display_user_profile, display_users
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -32,12 +35,14 @@ def add_user(connected_user: User):
                 typer.echo(f"Utilisateur {new_user.first_name} {new_user.last_name} créé avec succès.")
                 return
         except KeyError:
-            typer.echo("Erreur: Rôle non valide. Veuillez choisir parmi les rôles disponibles.")
+            sentry_sdk.capture_exception()
+            invalid_choice_try_again()
         except Exception as e:
+            sentry_sdk.capture_exception()
             db.rollback()
             typer.echo(f"Erreur lors de la création de l'utilisateur: {str(e)}")
     else:
-        typer.echo("Action non autorisée. Vous n'avez pas les permissions requises pour ajouter un utilisateur.")
+        action_not_authorised()
 
 
 # Affichage et sélection d'un utilisateur spécifique
@@ -45,7 +50,7 @@ def display_and_select_user(connected_user: User, filtered_users):
     from controllers.menu_controller import navigate_user_options  # Assurez-vous que cette fonction existe
 
     if not filtered_users:
-        typer.echo("Aucun utilisateur trouvé.")
+        user_not_found()
         return
 
     selected_user_id = paginate_items(filtered_users, display_users, 10)
@@ -71,12 +76,13 @@ def handle_user_search_by_name(connected_user: User):
             filtered_users = db.query(User).filter(User.last_name.ilike(f"%{last_name}%")).all()
 
             if not filtered_users:  # Si aucun utilisateur n'est trouvé
-                typer.echo("Aucun utilisateur trouvé avec ce nom. Essayez à nouveau ou entrez 'q' pour quitter.")
+                user_not_found()
                 continue  # Revenir au prompt initial
 
             display_and_select_user(connected_user, filtered_users)
             break  # Sortir après une sélection ou retourner au menu principal
         except Exception as e:
+            sentry_sdk.capture_exception()
             typer.echo(f"Erreur lors de la recherche des utilisateurs: {e}")
         finally:
             db.close()  # Assurer la fermeture de la session DB
@@ -91,6 +97,7 @@ def handle_user_search_by_role(connected_user: User):
             filtered_users = db.query(User).filter(User.role == role).all()
             display_and_select_user(connected_user, filtered_users)
         except KeyError:
+            sentry_sdk.capture_exception()
             typer.echo(f"Rôle '{role_str}' non reconnu.")
 
 
@@ -111,7 +118,7 @@ def update_user(connected_user: User, user_id: int):
         try:
             user = db.query(User).get(user_id)
             if not user:
-                typer.echo("Utilisateur non trouvé.")
+                user_not_found()
                 return
 
             update_data = user_update_form(user)  # Assurez-vous que cette fonction est définie
@@ -124,24 +131,25 @@ def update_user(connected_user: User, user_id: int):
             # Assurez-vous de gérer correctement les changements de mot de passe ou d'autres champs sensibles
 
             db.commit()
-            typer.echo("Utilisateur mis à jour avec succès.")
+            update_user_success()
             display_user_profile(user)
             typer.pause('Appuyez sur Entrée pour continuer...')
             navigate_user_menu(connected_user)
         except Exception as e:
+            sentry_sdk.capture_exception()
             db.rollback()
             typer.echo(f"Erreur lors de la mise à jour de l'utilisateur : {e}")
         finally:
             db.close()
     else:
-        typer.echo("Action non autorisée.")
+        action_not_authorised()
 
 
 # Gère la suppression d'un utilisateur
 def delete_user(connected_user: User, user_id: int):
     from controllers.menu_controller import navigate_user_menu
     if not is_superuser(connected_user):
-        typer.echo("Action non autorisée.")
+        action_not_authorised()
         return
 
     db = SessionLocal()
@@ -150,9 +158,9 @@ def delete_user(connected_user: User, user_id: int):
         if user:
             db.delete(user)
             db.commit()
-            typer.echo("Utilisateur supprimé avec succès.")
+            delete_user_success()
         else:
-            print("Utilisateur non trouvé.")
+            user_not_found()
     finally:
         db.close()
         return navigate_user_menu(connected_user)

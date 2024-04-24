@@ -1,3 +1,4 @@
+import sentry_sdk
 import typer
 from sqlalchemy.orm import Session
 
@@ -7,6 +8,8 @@ from utils.pagination import paginate_items
 from utils.permissions import is_superuser, is_gestion, is_commerciale
 from utils.validation import validate_contract_data
 from views.forms import contract_update_form, contract_form
+from views.messages import action_not_authorised, contract_not_found, add_contract_success, delete_contract_success, \
+    update_contract_success
 from views.reports import display_contracts, display_users, display_clients, display_contract_profile
 
 
@@ -48,13 +51,15 @@ def add_contract(connected_user: User):
         db.refresh(new_contract)
         db.close()
 
-        typer.echo(f"Contrat ajouté avec succès.")
+        add_contract_success()
 
         return navigate_contract_menu(connected_user)
     except ValueError as e:
+        sentry_sdk.capture_exception()
         db.rollback()
         typer.echo(f"Erreur: {e}")
     except Exception as e:
+        sentry_sdk.capture_exception()
         db.rollback()
         typer.echo(f"Une erreur inattendue est survenue : {e}")
     finally:
@@ -66,7 +71,7 @@ def display_selected_contract_details(connected_user: User, filtered_contracts):
     from controllers.menu_controller import navigate_contract_options
 
     if not filtered_contracts:
-        typer.echo("Aucun contrat trouvé.")
+        contract_not_found()
         return
 
     selected_contract_id = paginate_items(filtered_contracts, display_contracts, 10)
@@ -80,7 +85,7 @@ def display_selected_contract_details(connected_user: User, filtered_contracts):
             display_contract_profile(selected_contract)
             navigate_contract_options(connected_user, selected_contract)
         else:
-            typer.echo("Contrat non trouvé.")
+            contract_not_found()
 
 
 # Recherche de contrats par client
@@ -94,7 +99,7 @@ def handle_search_contract_by_client(connected_user: User):
             if filtered_contracts:
                 display_selected_contract_details(connected_user, filtered_contracts)
             else:
-                typer.echo("Aucun contrat trouvé pour ce client.")
+                contract_not_found()
     finally:
         db.close()
 
@@ -110,7 +115,7 @@ def handle_search_contract_by_commercial(connected_user: User):
             if filtered_contracts:
                 display_selected_contract_details(connected_user, filtered_contracts)
             else:
-                typer.echo("Aucun contrat trouvé pour ce commercial.")
+                contract_not_found()
     finally:
         db.close()
 
@@ -122,7 +127,7 @@ def handle_search_contracts_in_progress(connected_user: User):
         if filtered_contracts:
             display_selected_contract_details(connected_user, filtered_contracts)
         else:
-            typer.echo("Aucun contrat en cours trouvé.")
+            contract_not_found()
     finally:
         db.close()
 
@@ -133,7 +138,7 @@ def handle_search_contracts_not_fully_paid(connected_user: User):
         if filtered_contracts:
             display_selected_contract_details(connected_user, filtered_contracts)
         else:
-            typer.echo("Aucun contrat non entièrement payé trouvé.")
+            contract_not_found()
 
 
 def handle_search_all_contracts(connected_user: User):
@@ -142,7 +147,7 @@ def handle_search_all_contracts(connected_user: User):
         if filtered_contracts:
             display_selected_contract_details(connected_user, filtered_contracts)
         else:
-            typer.echo("Aucun contrat trouvé.")
+            contract_not_found()
 
 
 # Mise à jour d'un contrat
@@ -152,7 +157,7 @@ def update_contract(connected_user: User, contract_id):
         db: Session = SessionLocal()
         contract = db.query(Contract).get(contract_id)
         if not contract:
-            typer.echo("Contrat non trouvé.")
+            contract_not_found()
             db.close()
             return
 
@@ -166,17 +171,18 @@ def update_contract(connected_user: User, contract_id):
             # Mettre à jour les données ici, similaire à la mise à jour d'un client
             db.commit()
             typer.clear()
-            typer.echo("Contrat mis à jour avec succès.")
+            update_contract_success()
             display_contract_profile(contract)  # Vous devez définir cette fonction
             typer.pause('Appuyez sur une touche pour revenir au menu "Gestion des contrats"...')
             navigate_contract_menu(connected_user)
         except Exception as e:
+            sentry_sdk.capture_exception()
             db.rollback()
             typer.echo(f"Erreur lors de la mise à jour du contrat : {e}")
         finally:
             db.close()
     else:
-        typer.echo("Accès non autorisé.")
+        action_not_authorised()
 
 
 # Suppression d'un contrat
@@ -187,9 +193,9 @@ def delete_contract(connected_user: User, contract_id):
         if contract:
             db.delete(contract)
             db.commit()
-            typer.echo("Contrat supprimé avec succès.")
+            delete_contract_success()
         else:
-            typer.echo("Contrat non trouvé.")
+            contract_not_found()
         db.close()
     else:
-        typer.echo("Action non autorisée.")
+        action_not_authorised()

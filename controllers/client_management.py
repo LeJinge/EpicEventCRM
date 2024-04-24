@@ -1,3 +1,4 @@
+import sentry_sdk
 import typer
 from sqlalchemy.orm import Session, joinedload
 
@@ -7,6 +8,8 @@ from utils.pagination import paginate_items
 from utils.permissions import is_superuser, is_commerciale
 from utils.validation import validate_client_data
 from views.forms import client_form, client_update_form
+from views.messages import action_not_authorised, client_not_found, commercial_not_found, update_client_success, \
+    delete_client_success
 from views.reports import display_client_profile, display_clients, display_users
 
 
@@ -52,11 +55,13 @@ def add_client(connected_user: User):
             typer.echo(f"Client {client.first_name} {client.last_name} créé avec succès.")
             return
         except ValueError as e:
+            sentry_sdk.capture_exception()
             typer.echo(f"Erreur: {e}")
         except Exception as e:
+            sentry_sdk.capture_exception()
             typer.echo(f"Une erreur inattendue est survenue : {e}")
     else:
-        typer.echo("Action non autorisée.")
+        action_not_authorised()
 
 
 # Gère la récupération des utilisateurs
@@ -67,7 +72,7 @@ def display_and_select_client(connected_user: User, filtered_clients):
     from controllers.menu_controller import navigate_client_options
 
     if not filtered_clients:
-        typer.echo("Aucun client trouvé.")
+        client_not_found()
         return
 
     selected_client_id = paginate_items(filtered_clients, display_clients, 10)
@@ -94,11 +99,12 @@ def handle_client_search_by_name(connected_user: User):
             filtered_clients = db.query(Client).filter(Client.last_name.ilike(f"%{last_name}%")).all()
 
             if not filtered_clients:  # Si aucun client n'est trouvé
-                typer.echo("Aucun client trouvé avec ce nom. Essayez à nouveau ou entrez 'q' pour quitter.")
+                client_not_found()
                 continue  # Revenir au prompt initial
 
             display_and_select_client(connected_user, filtered_clients)
         except Exception as e:
+            sentry_sdk.capture_exception()
             typer.echo(f"Erreur lors de la recherche des clients: {e}")
         finally:
             db.close()  # Fermer la session après chaque utilisation
@@ -116,10 +122,11 @@ def handle_client_search_by_commercial(connected_user: User):
                 if filtered_clients:
                     display_and_select_client(connected_user, filtered_clients)
                 else:
-                    typer.echo("Aucun client trouvé pour ce commercial.")
+                    client_not_found()
         else:
-            typer.echo("Aucun commercial trouvé.")
+            commercial_not_found()
     except Exception as e:
+        sentry_sdk.capture_exception()
         typer.echo(f"Erreur lors de la recherche de clients par commercial : {e}")
     finally:
         db.close()
@@ -133,8 +140,9 @@ def handle_client_list_all_clients(connected_user: User):
         if all_clients:
             display_and_select_client(connected_user, all_clients)
         else:
-            typer.echo("Aucun client trouvé.")
+            client_not_found()
     except Exception as e:
+        sentry_sdk.capture_exception()
         typer.echo(f"Erreur lors du listage de tous les clients : {e}")
     finally:
         db.close()
@@ -147,7 +155,7 @@ def update_client(connected_user: User, client_id: int):
         db = SessionLocal()
         client = db.query(Client).get(client_id)
         if not client:
-            print("Client non trouvé.")
+            client_not_found()
             return
 
         update_data = client_update_form(client)
@@ -161,17 +169,18 @@ def update_client(connected_user: User, client_id: int):
             client.commercial_contact_id = update_data.get('commercial_id', client.commercial_contact_id)
 
             db.commit()
-            typer.echo("Client mis à jour avec succès.")
+            update_client_success()
             display_client_profile(client)
             typer.pause("Appuyez sur Entrée pour continuer...")
             navigate_client_menu(connected_user)
         except Exception as e:
+            sentry_sdk.capture_exception()
             db.rollback()
-            print(f"Erreur lors de la mise à jour du client : {e}")
+            typer.echo(f"Erreur lors de la mise à jour du client : {e}")
         finally:
             db.close()
     else:
-        typer.echo("Action non autorisée.")
+        action_not_authorised()
     navigate_client_menu(connected_user)
 
 
@@ -185,7 +194,7 @@ def delete_client(connected_user, client_id: int):
             db.delete(client)
             db.commit()
         db.close()
-        typer.echo("Client supprimé avec succès.")
+        delete_client_success()
         navigate_client_menu(connected_user)
     else:
-        typer.echo("Action non autorisée.")
+        action_not_authorised()

@@ -1,9 +1,7 @@
-from sqlalchemy.orm import Session
 from models.models import User
 from utils.db import SessionLocal
 
-# Supposons que cette variable globale stocke l'ID de l'utilisateur courant.
-# Dans une application réelle, vous voudriez gérer ceci de manière plus sécurisée, peut-être avec des jetons de session.
+
 CURRENT_USER_ID = None
 
 

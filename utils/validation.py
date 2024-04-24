@@ -1,6 +1,8 @@
 import re
 from datetime import datetime
 
+import sentry_sdk
+
 from models.models import UserRole, ContractStatus
 
 
@@ -52,6 +54,7 @@ def validate_contract_data(client_id: int, commercial_contact_id: int, status: s
         if creation_date_obj > datetime.now():
             raise ValueError("La date de création ne peut pas être dans le futur.")
     except ValueError as e:
+        sentry_sdk.capture_exception()
         raise ValueError(f"Format de la date de création invalide. Utilisez YYYY-MM-DD. Détail de l'erreur : {e}")
 
     return True

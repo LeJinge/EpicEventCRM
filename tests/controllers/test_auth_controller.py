@@ -1,5 +1,17 @@
+from unittest.mock import MagicMock, patch
+
+import pytest
+from typer.testing import CliRunner
+
 from controllers.auth_controller import authenticate_user
+from controllers.login_controller import login
 from models.models import User, UserRole, pwd_context
+from views.login import get_user_credentials
+
+
+@pytest.fixture
+def runner():
+    return CliRunner()
 
 
 def test_authenticate_user(session):
@@ -16,3 +28,5 @@ def test_authenticate_user(session):
 
     # Tester l'authentification échouée avec un mauvais mot de passe
     assert authenticate_user("gestion@exemple.com", "wrongpassword") is None
+
+

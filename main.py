@@ -1,20 +1,31 @@
 import sentry_sdk
 import typer
 
+from config import load_config
 from controllers.login_controller import login
+
+# Load config.yaml
+config = load_config('config.yaml')
+
+sentry_api_key = config["sentry"].get("SENTRY_API_KEY")
+
 
 # Initialisation de Sentry
 sentry_sdk.init(
-    dsn="https://0f22d1ce60e139ab2a2dfa3178c7d010@o4507101273718784.ingest.de.sentry.io/4507101277585488",
+    dsn=sentry_api_key,
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
 )
 
 app = typer.Typer()
 
+
 # Ajoutez ici d'autres commandes si nécessaire
 
-app.command()(login)  # Associe la commande de connexion Typer à la fonction login_controller
+@app.command()
+def run():
+    login()
+
 
 if __name__ == "__main__":
     app()

@@ -82,7 +82,6 @@ def display_user_management_menu(connected_user: User) -> None:
             "0. Retour",
         ]
     else:
-        print(connected_user)
         options = ["Accès refusé."]
     display_menu(title, options)
 

@@ -1,3 +1,4 @@
+import sentry_sdk
 import typer
 
 from controllers.client_management import add_client, update_client, delete_client, \
@@ -17,6 +18,7 @@ from views.menu import display_main_menu, display_contract_management_menu, disp
     display_client_management_menu, display_search_user_menu, display_user_management_menu, display_user_options, \
     display_search_client_menu, display_client_options, display_search_menu, display_search_contract_menu, \
     display_contract_options, display_event_options, display_search_event_menu
+from views.messages import invalid_choice_try_again, action_not_authorised, number_not_valid
 
 
 def navigate_main_menus(connected_user: User):
@@ -26,11 +28,13 @@ def navigate_main_menus(connected_user: User):
             display_main_menu(connected_user)
             choice = int(typer.prompt("Entrez votre choix ou 0 pour quitter "))
         except ValueError:
-            typer.echo("Choix invalide, veuillez réessayer.")
+            sentry_sdk.capture_exception()
+            invalid_choice_try_again()
             return
 
         if choice == 0:
             logout()
+            break
         elif choice == 1:
             navigate_search_menu(connected_user)
         else:
@@ -61,7 +65,7 @@ def navigate_main_menus(connected_user: User):
                 if choice == 2:
                     navigate_event_menu(connected_user)
             else:
-                typer.echo("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
                 return navigate_main_menus(connected_user)
 
 
@@ -80,13 +84,14 @@ def navigate_user_menu(connected_user: User):
                 elif choice == 2:
                     navigate_user_search_menu(connected_user)
                 else:
-                    typer.echo("Choix invalide, veuillez réessayer.")
+                    invalid_choice_try_again()
             except ValueError:
-                typer.echo("Choix invalide, veuillez réessayer.")
+                sentry_sdk.capture_exception()
+                invalid_choice_try_again()
         return
 
     else:
-        print("Accès refusé.")
+        action_not_authorised()
         return
 
 
@@ -106,9 +111,10 @@ def navigate_user_search_menu(connected_user: User):
             elif choice == 3:
                 handle_list_all_users(connected_user)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Choix invalide, veuillez réessayer.")
+            sentry_sdk.capture_exception()
+            invalid_choice_try_again()
     return
 
 
@@ -125,9 +131,10 @@ def navigate_user_options(connected_user: User, selected_user: User):
             elif choice == 2:
                 delete_user(connected_user, selected_user.id)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Choix invalide, veuillez réessayer.")
+            sentry_sdk.capture_exception()
+            invalid_choice_try_again()
     return
 
 
@@ -148,9 +155,10 @@ def navigate_search_menu(connected_user: User):
             elif choice == 0:
                 break
             else:  # Choix invalide
-                typer.echo("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            typer.echo("Choix invalide, veuillez réessayer.")
+            sentry_sdk.capture_exception()
+            invalid_choice_try_again()
 
 
 def navigate_client_menu(connected_user: User):
@@ -167,9 +175,10 @@ def navigate_client_menu(connected_user: User):
             elif choice == 2:
                 navigate_client_search_menu(connected_user)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            sentry_sdk.capture_exception()
+            number_not_valid()
     navigate_main_menus(connected_user)
 
 
@@ -189,9 +198,10 @@ def navigate_client_search_menu(connected_user: User):
             elif choice == 3:
                 handle_client_list_all_clients(connected_user)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            sentry_sdk.capture_exception()
+            number_not_valid()
 
 
 def navigate_client_options(connected_user: User, client: Client):
@@ -207,9 +217,10 @@ def navigate_client_options(connected_user: User, client: Client):
             elif choice == 2:
                 delete_client(connected_user, client.id)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            sentry_sdk.capture_exception()
+            number_not_valid()
 
 
 def navigate_contract_menu(connected_user: User):
@@ -227,9 +238,10 @@ def navigate_contract_menu(connected_user: User):
                 elif choice == 2:
                     navigate_contract_search_menu(connected_user)
                 else:
-                    print("Choix invalide, veuillez réessayer.")
+                    invalid_choice_try_again()
             except ValueError:
-                print("Veuillez entrer un nombre valide.")
+                sentry_sdk.capture_exception()
+                number_not_valid()
         elif is_commerciale(connected_user):
             try:
                 choice = int(input(
@@ -239,11 +251,12 @@ def navigate_contract_menu(connected_user: User):
                 elif choice == 1:
                     navigate_contract_search_menu(connected_user)
                 else:
-                    print("Choix invalide, veuillez réessayer.")
+                    invalid_choice_try_again()
             except ValueError:
-                print("Veuillez entrer un nombre valide.")
+                sentry_sdk.capture_exception()
+                number_not_valid()
         else:
-            typer.echo("Accès refusé.")
+            action_not_authorised()
             return
 
         navigate_main_menus(connected_user)
@@ -269,9 +282,10 @@ def navigate_contract_search_menu(connected_user: User):
             elif choice == 5:
                 handle_search_all_contracts(connected_user)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            sentry_sdk.capture_exception()
+            number_not_valid()
     navigate_contract_menu(connected_user)
 
 
@@ -288,9 +302,10 @@ def navigate_contract_options(connected_user: User, contract: Contract):
             elif choice == 2:
                 delete_contract(connected_user, contract.id)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            sentry_sdk.capture_exception()
+            number_not_valid()
     navigate_contract_menu(connected_user)
 
 
@@ -308,10 +323,11 @@ def navigate_event_menu(connected_user: User):
                 elif choice == 0:
                     break
                 else:
-                    print("Choix invalide, veuillez réessayer.")
+                    invalid_choice_try_again()
                     continue
             except ValueError:
-                print("Veuillez entrer un nombre valide.")
+                sentry_sdk.capture_exception()
+                number_not_valid()
         elif is_gestion(connected_user) or is_support(connected_user):
             try:
                 choice = int(input(
@@ -321,12 +337,13 @@ def navigate_event_menu(connected_user: User):
                 elif choice == 0:
                     break
                 else:
-                    typer.echo("Choix invalide, veuillez réessayer.")
+                    invalid_choice_try_again()
                     continue
             except ValueError:
-                typer.echo("Veuillez entrer un nombre valide.")
+                sentry_sdk.capture_exception()
+                number_not_valid()
         else:
-            typer.echo("Accès refusé.")
+            action_not_authorised()
         navigate_main_menus(connected_user)
 
 
@@ -349,9 +366,10 @@ def navigate_event_search_menu(connected_user: User):
             elif choice == 5:
                 handle_search_all_events(connected_user)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            sentry_sdk.capture_exception()
+            number_not_valid()
     navigate_event_menu(connected_user)
 
 
@@ -368,11 +386,12 @@ def navigate_event_options(connected_user: User, event: Event):
             elif choice == 2:
                 delete_event(connected_user, event.id)
             else:
-                print("Choix invalide, veuillez réessayer.")
+                invalid_choice_try_again()
         except ValueError:
-            print("Veuillez entrer un nombre valide.")
+            sentry_sdk.capture_exception()
+            number_not_valid()
     navigate_event_menu(connected_user)
 
 
-def main_menu(user):
-    navigate_main_menus(user)  # Remplacer l'appel direct à display_main_menu par navigate_menus
+def main_menu(connected_user: User):
+    navigate_main_menus(connected_user)  # Remplacer l'appel direct à display_main_menu par navigate_menus

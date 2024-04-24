@@ -1,3 +1,4 @@
+import typer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -8,13 +9,13 @@ from models.models import Base, User, UserRole, pwd_context
 def drop_database():
     engine = create_engine(DATABASE_URI)
     Base.metadata.drop_all(engine)
-    print("Toutes les tables ont été supprimées.")
+    typer.echo("Toutes les tables ont été supprimées.")
 
 
 def create_database():
     engine = create_engine(DATABASE_URI)
     Base.metadata.create_all(engine)
-    print("Les tables ont été créées.")
+    typer.echo("Les tables ont été créées.")
 
 
 def create_initial_users():
@@ -40,7 +41,7 @@ def create_initial_users():
     session.add(admin_user)
     session.add(gestion_user)
     session.commit()
-    print("Les utilisateurs initiaux ont été créés.")
+    typer.echo("Les utilisateurs initiaux ont été créés.")
     session.close()
 
 
@@ -71,7 +72,7 @@ def create_fictitious_users():
         session.add(support_user)
 
     session.commit()
-    print("Les utilisateurs fictifs commerciaux et support ont été créés.")
+    typer.echo("Les utilisateurs fictifs commerciaux et support ont été créés.")
     session.close()
 
 

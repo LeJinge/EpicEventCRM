@@ -10,7 +10,7 @@ def get_user_credentials():
     while not is_valid_email(email):
         console.print("[bold red]Email invalide. Veuillez réessayer.[/bold red]", style="bold red")
         email = console.input("[bold magenta]Email: [/bold magenta]")
-    password = getpass("Mot de passe: ")  # Masque l'entrée du mot de passe
+    password = getpass("Mot de passe: ")
     return email, password
 
 

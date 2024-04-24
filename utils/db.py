@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from config import DATABASE_URI
 
 # Créer l'engine de base de données SQLAlchemy avec l'URI de PostgreSQL
-engine = create_engine(DATABASE_URI, echo=True)
+engine = create_engine(DATABASE_URI, echo=False)
 
 # Créer une session de base de données configurée avec l'engine
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

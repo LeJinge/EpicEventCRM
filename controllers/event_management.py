@@ -1,3 +1,4 @@
+import sentry_sdk
 import typer
 from sqlalchemy.orm import Session
 
@@ -6,6 +7,8 @@ from utils.db import SessionLocal
 from utils.pagination import paginate_items
 from utils.permissions import is_superuser, is_gestion, is_support
 from views.forms import event_form, event_update_form
+from views.messages import event_not_found, action_not_authorised, add_event_success, update_event_success, \
+    contract_not_found, delete_event_success
 from views.reports import display_event_profile, display_contracts, display_events, display_users, display_clients
 
 
@@ -20,9 +23,10 @@ def add_event(connected_user: User):
         db.add(new_event)
         db.commit()
 
-        typer.echo("Événement ajouté avec succès.")
+        add_event_success()
         return navigate_event_menu(connected_user)  # Assurez-vous de définir cette fonction de navigation
     except Exception as e:
+        sentry_sdk.capture_exception()
         db.rollback()
         typer.echo(f"Erreur lors de l'ajout de l'événement : {e}")
     finally:
@@ -33,7 +37,7 @@ def display_selected_event_details(connected_user: User, filtered_events):
     from controllers.menu_controller import navigate_event_options
 
     if not filtered_events:
-        typer.echo("Aucun événement trouvé.")
+        event_not_found()
         return
 
     selected_event_id = paginate_items(filtered_events, display_events, 10)
@@ -47,7 +51,7 @@ def display_selected_event_details(connected_user: User, filtered_events):
             display_event_profile(event)
             navigate_event_options(connected_user, event)
         else:
-            typer.echo("Aucun événement trouvé.")
+            event_not_found()
 
 
 def handle_search_event_by_contract(connected_user: User):
@@ -60,7 +64,7 @@ def handle_search_event_by_contract(connected_user: User):
             if filtered_events:
                 display_selected_event_details(connected_user, filtered_events)
             else:
-                typer.echo("Aucun événement trouvé pour ce contrat.")
+                event_not_found()
     finally:
         db.close()
 
@@ -75,7 +79,7 @@ def handle_search_event_by_support_contact(connected_user: User):
             if filtered_events:
                 display_selected_event_details(connected_user, filtered_events)
             else:
-                typer.echo("Aucun événement trouvé pour ce contact de support.")
+                event_not_found()
     finally:
         db.close()
 
@@ -87,7 +91,7 @@ def handle_search_event_without_support_contact(connected_user: User):
         if filtered_events:
             display_selected_event_details(connected_user, filtered_events)
         else:
-            typer.echo("Aucun événement trouvé sans contact de support.")
+            event_not_found()
     finally:
         db.close()
 
@@ -102,7 +106,7 @@ def handle_search_event_by_client(connected_user: User):
             if filtered_events:
                 display_selected_event_details(connected_user, filtered_events)
         else:
-            typer.echo("Aucun événement trouvé pour ce client.")
+            event_not_found()
     finally:
         db.close()
 
@@ -113,7 +117,7 @@ def handle_search_all_events(connected_user: User):
     if filtered_events:
         display_selected_event_details(connected_user, filtered_events)
     else:
-        typer.echo("Aucun événement trouvé.")
+        event_not_found()
     db.close()
 
 
@@ -123,7 +127,7 @@ def update_event(connected_user: User, event_id: int):
         db: Session = SessionLocal()
         event = db.query(Event).get(event_id)
         if not event:
-            typer.echo("Événement non trouvé.")
+            event_not_found()
             return
 
         update_data = event_update_form(event)
@@ -138,18 +142,19 @@ def update_event(connected_user: User, event_id: int):
             event.support_contact_id = update_data.get("support_contact_id", event.support_contact_id)
 
             db.commit()
-            typer.echo("Événement mis à jour avec succès.")
+            update_event_success()
             display_event_profile(event)
             typer.pause('Appuyez sur Entrée pour continuer...')
             navigate_event_menu(connected_user)
         except Exception as e:
+            sentry_sdk.capture_exception()
             db.rollback()
             typer.echo(f"Erreur lors de la mise à jour de l'événement : {e}")
         finally:
-            typer.echo("Événement non trouvé.")
+            event_not_found()
         db.close()
     else:
-        typer.echo("Action non autorisée.")
+        action_not_authorised()
 
 
 def delete_event(connected_user, event_id: int):
@@ -159,9 +164,9 @@ def delete_event(connected_user, event_id: int):
         if event:
             db.delete(event)
             db.commit()
-            typer.echo("Contrat supprimé avec succès.")
+            delete_event_success()
         else:
-            typer.echo("Contrat non trouvé.")
+            contract_not_found()
         db.close()
     else:
-        typer.echo("Action non autorisée.")
+        action_not_authorised()

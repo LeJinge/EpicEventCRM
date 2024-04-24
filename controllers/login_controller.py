@@ -14,7 +14,6 @@ def login():
 
     if connected_user:
         display_success("Connexion réussie.")
-        typer.echo(connected_user.role)
-        main_menu(connected_user)  # Passez l'objet user complet
+        main_menu(connected_user)
     else:
         display_error("Échec de la connexion. Veuillez vérifier vos identifiants.")

@@ -1,6 +1,7 @@
 import typer
 
 from utils.db import SessionLocal
+from views.messages import successful_logout
 
 
 def logout():
@@ -10,4 +11,4 @@ def logout():
     # Fermez la session pour nettoyer les ressources de la base de données
     db_session.close()
 
-    typer.echo("Déconnexion réussie.")
+    successful_logout()

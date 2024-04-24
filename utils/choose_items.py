@@ -23,7 +23,7 @@ def choose_commercial() -> Optional[int]:
     with SessionLocal() as db:
         commercials = db.query(User).filter(User.role == UserRole.COMMERCIALE).all()
         if not commercials:
-            print("Aucun contact commercial trouvé.")
+            typer.echo("Aucun contact commercial trouvé.")
             return None
 
         selected_commercial_id = paginate_items(commercials, display_users, 10)

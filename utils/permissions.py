@@ -1,9 +1,7 @@
-# Définir la fonction en prenant l'objet User
 from models.models import User, UserRole
 
 
 def is_superuser(user: User) -> bool:
-    print(user)
     return user.role == UserRole.SUPERUSER
 
 

@@ -20,8 +20,8 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    first_name = Column(String)  # Ajout du prénom
-    last_name = Column(String)  # Ajout du nom
+    first_name = Column(String)
+    last_name = Column(String)
     email = Column(String, unique=True)
     password = Column(String)
     role = Column(Enum(UserRole))
@@ -41,8 +41,8 @@ class Client(Base):
     __tablename__ = 'clients'
 
     id = Column(Integer, primary_key=True)
-    first_name = Column(String)  # Ajout du prénom
-    last_name = Column(String)  # Ajout du nom
+    first_name = Column(String)
+    last_name = Column(String)
     email = Column(String)
     phone_number = Column(String)
     company_name = Column(String)
