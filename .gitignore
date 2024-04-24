@@ -34,3 +34,4 @@ config.py
 .DS_Store   # Fichiers spécifiques à macOS
 Thumbs.db   # Miniatures Windows
 Desktop.ini # Windows files
+/tests/

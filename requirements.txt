@@ -140,3 +140,8 @@ typing-extensions==4.10.0 ; python_version >= "3.9" and python_version < "4.0" \
 urllib3==2.2.1 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:450b20ec296a467077128bff42b73080516e71b56ff59a60a02bef2232c4fa9d \
     --hash=sha256:d0570876c61ab9e520d776c38acbbb5b05a776d3f9ff98a5c8fd5162a444cf19
+
+sqlalchemy~=2.0.28
+passlib~=1.7.4
+rich~=13.7.1
+typer~=0.9.0
