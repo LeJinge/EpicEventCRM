@@ -18,9 +18,9 @@ et de l'environnement virtuel.
 
 Commencez par cloner le dépôt où se trouve le projet :
 ```bash
-git clone https://your-repository-url.git
 cd chemin-vers-le-dossier-du-projet
-```
+git clone https://github.com/LeJinge/EpicEventCRM.git
+```  
 
 ## 2. Configuration de l'environnement virtuel 
 
