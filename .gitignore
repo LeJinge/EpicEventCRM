@@ -35,4 +35,3 @@ config.py
 Thumbs.db   # Miniatures Windows
 Desktop.ini # Windows files
 /tests/
-
